@@ -1,7 +1,8 @@
 
 /*
 Rough draft of quant-seq fwd analysis pipeline for Cryptococcus neoformans H99
-This uses two subsampled fastq.gz as test datasets
+This was tested on two subsampled fastq.gz as test datasets
+UPDATE - adjusted to run on the full data.
 */
 
 /*
@@ -15,7 +16,7 @@ params.adapters = 'AAAAAAAAAAAA'
 params.index_dir = '../CryptoRNASeq2020_draft/input_annotation/index'
 params.index_prefix = 'CNA3_hisat2'
 params.mRNAgff = 'input_annotation/H99.mRNAonly.2018-12-03.gff'
-params.input_fq_dir = '/homes/ewallac2/mount/datastore/wallace_rna/bigdata/fastq/EH_050221_Data_subsample'
+params.input_fq_dir = '/homes/ewallac2/mount/datastore/wallace_rna/bigdata/fastq/EH_050221_Data'
 params.output_dir = 'quantseqfwd_test_output'
 params.featuretype = 'mRNA'
 params.featurename = 'Name'
