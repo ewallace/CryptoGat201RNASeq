@@ -20,3 +20,9 @@ gzip -dkc EH_050221_Data/1_S1_R1_001.fastq.gz \
 gzip -dkc EH_050221_Data/2_S44_R1_001.fastq.gz \
   | head -n 400000 | gzip > EH_050221_Data_subsample/2_S44_R1_001_init100000.fastq.gz
 ```
+
+## How to run the pipeline
+
+```
+nextflow run src/quantseqfwd.nf -with-dag flowchart.png -with-report quantseqfwd_report.html
+```
