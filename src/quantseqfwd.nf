@@ -16,8 +16,10 @@ params.adapters = 'AAAAAAAAAAAA'
 params.index_dir = '../CryptoRNASeq2020_draft/input_annotation/index'
 params.index_prefix = 'CNA3_hisat2'
 params.mRNAgff = 'input_annotation/H99.mRNAonly.2018-12-03.gff'
-params.input_fq_dir = '/homes/ewallac2/mount/datastore/wallace_rna/bigdata/fastq/EH_050221_Data'
-params.output_dir = 'quantseqfwd_EH_050221'
+// params.input_fq_dir = '/homes/ewallac2/mount/datastore/wallace_rna/bigdata/fastq/EH_050221_Data'
+// params.output_dir = 'quantseqfwd_EH_050221'
+params.input_fq_dir = '/homes/ewallac2/mount/datastore/wallace_rna/bigdata/fastq/EH_050221_Data_subsample'
+params.output_dir = 'quantseqfwd_test_output'
 params.featuretype = 'mRNA'
 params.featurename = 'Name'
 params.num_processes = 4
@@ -51,7 +53,7 @@ Run FastQC to produce a quality control report for the input data for every samp
 process runFastQC{
     errorStrategy 'ignore'
     tag "${sample_id}"
-    cpus { 2 }
+    publishDir "${params.output_dir}/${sample_id}", pattern: '*.html', mode: 'copy', overwrite: true
     input:
         set sample_id, file(sample_fq) from input_fq_qc
 
@@ -61,7 +63,7 @@ process runFastQC{
     """
     mkdir ${sample_id}_fastqc
     fastqc --outdir ${sample_id}_fastqc \
-    -t ${task.cpus} \
+    -t ${params.num_processes} \
     ${sample_fq}
     """
 }
@@ -72,8 +74,7 @@ Run multiQC to collate single quality control report across all samples.
 
 process runMultiQC{
     tag { "multiQC" }
-    publishDir "${params.output_dir}/qc_input", mode: 'copy', overwrite: false
-
+    publishDir "${params.output_dir}/qc_input", mode: 'copy', overwrite: true
     input:
         file('*') from fastqc_files.collect()
 
@@ -157,7 +158,7 @@ Make bedgraphs showing coverage of aligned reads
 process makeBedgraphs {
     errorStrategy 'ignore'
     tag "${sample_id}"
-    publishDir "${params.output_dir}/${sample_id}", mode: 'copy'
+    publishDir "${params.output_dir}/${sample_id}", mode: 'copy', overwrite: true
     input:
         tuple val(sample_id), file(sample_bam), file(sample_bam_bai) \
             from bedgraph_bam
