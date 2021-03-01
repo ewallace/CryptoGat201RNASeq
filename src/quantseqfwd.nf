@@ -111,19 +111,23 @@ Align trimmed reads to the genome with hisat2
 process alignHisat2 {
     errorStrategy 'ignore'
     tag "${sample_id}"
+    publishDir "${params.output_dir}/${sample_id}", pattern: '*.hisat2_summary.txt', mode: 'copy', overwrite: true
     input:
         set sample_id, file(sample_fq) from cut_fq
         file(index_ht2_parts) from index_ht2_parts
     output:
         file("unaligned.fq") into unaligned_fq
+        file "${sample_id}.hisat2_summary.txt" into alignment_logs
         tuple val(sample_id), file("aligned.sam") into aligned_sam
     shell:
         """
         hisat2 --version
         hisat2 -p ${params.num_processes} -k 2 \
-            --no-spliced-alignment --rna-strandness F --no-unal \
+            --pen-cansplice 4 --pen-noncansplice 12 --min-intronlen 40  --max-intronlen 200 \
+            --rna-strandness F --no-unal \
             --un unaligned.fq -x ${params.index_prefix} \
-            -S aligned.sam -U ${sample_fq} 
+            -S aligned.sam -U ${sample_fq} \
+            --summary-file ${sample_id}.hisat2_summary.txt
         """
 }
 
