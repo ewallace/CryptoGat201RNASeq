@@ -53,7 +53,7 @@ Run FastQC to produce a quality control report for the input data for every samp
 process runFastQC{
     errorStrategy 'ignore'
     tag "${sample_id}"
-    publishDir "${params.output_dir}/${sample_id}", pattern: '*.html', mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/${sample_id}", saveAs: { "${sample_id}_fastqc.zip" }, mode: 'copy', overwrite: true
     input:
         set sample_id, file(sample_fq) from input_fq_qc
 
