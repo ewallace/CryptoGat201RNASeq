@@ -33,8 +33,12 @@ This file analyses the counts per gene across samples.
 Define some functions that will be useful for the analysis
 
 ```{r count_functions}
-calculate_cpm <- function(x) {
-    x / sum(x, na.rm=TRUE) * 1e6
+calculate_cpm <- function(x, round_digits = NA) {
+    cpm <- x / sum(x, na.rm=TRUE) * 1e6
+    if( !is.na(round_digits) ) {
+        cpm <- round(cpm, digits = round_digits)
+    }
+    cpm
 }
 ```
 
@@ -60,12 +64,37 @@ counts_bygene_long <- counts_bygene_wide %>%
     pivot_longer(ends_with(".bam"), names_to = "Sampleid", values_to = "Count") %>%
     mutate(Sampleid = str_extract(Sampleid, "[0-9b]*(?=_)")) %>%
     group_by(Sampleid) %>%
-    mutate(TPM = calculate_cpm(Count)) %>%
+    mutate(TPM = calculate_cpm(Count, round_digits = 2)) %>%
     ungroup() %>%
     left_join(sample_sheet, by = "Sampleid") %>%
-    select(Sampleid, BioRep, Code, Strain, Gat201, Condition, Time, Geneid, Count, TPM)
+    select(Sampleid, Code, Strain, Gat201, Condition, Time, BioRep, Geneid, Count, TPM) %>%
+    arrange(Geneid, Strain, Time, Condition, BioRep)
 
 counts_bygene_long
+```
+
+### Write out to file `quantseqfwd_EH_050221_tidy.txt`
+
+```{r write_tidy_counts, dependson = "make_tidy_counts"}
+file_counts_long <- "../results_counts/quantseqfwd_EH_050221_tidy.txt.gz"
+write_lines(c("# quantseqfwd_EH_050221_tidy.txt",
+              "# Tidy/long-format counts from QuantSeq Gat201 RNA-seq timecourse in Cryptococcus neoformans",
+              "# Edward Wallace, Edward.Wallace@ed.ac.uk",
+              paste("# ", date()),
+              "# Columns:",
+              "#   Sampleid: id for sequencing sample (disordered here)",
+              "#   Code: encodes Strain, Condition, Time",
+              "#   Strain: yeast strain, a (KN99a), A (KN99alpha), B (Bahn collection deltaGat201), M (Madhani collection deltaGat201)",
+              "#   Gat201: genotype for Gat201, either WT (present) or delta (deletion/disruption)",
+              "#   Condition: growth media  Y (YPD), R (RPMI), RS (RPMI + serum)",
+              "#   Time: time in minutes from shift to R/RS media. 0 minutes is in YPD",
+              "#   BioRep: biological replicate (1 or 2)",
+              "#   Geneid: Geneid with systematic Cryptococcus H99 gene name",
+              "#   Count: QuantSeq 3'-end counts assigned to gene",
+              "#   TPM: Transcripts per million (normalized Count for each sample)",
+              "# "),
+            file = file_counts_long)
+write_tsv(counts_bygene_long, file = file_counts_long, col_names = TRUE, append = TRUE)
 ```
 
 ## Plot some individual genes
