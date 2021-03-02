@@ -10,6 +10,7 @@ Analysis started by Edward Wallace, February 2021
 * input_annotation - Cryptococcus genome annotation used for read alignment and counting.
 * input_experiment - other input files including sample sheet
 * results - output data and results
+* results_counts - Results consisting of count data and analyses of those.
 
 ## How we made the subsampled data
 
