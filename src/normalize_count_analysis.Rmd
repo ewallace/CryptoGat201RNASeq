@@ -1,0 +1,81 @@
+---
+title: "Cryptococcus Gat201 RNA-seq Counts analysis"
+author: "Edward Wallace"
+date: "02/03/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot(font_size = 12) + theme(strip.background = element_blank()))
+```
+
+# Summary
+
+This file analyses the counts per gene across samples.
+
+
+### Define functions
+
+Define some functions that will be useful for the anlaysis
+
+```{r count_functions}
+calculate_cpm <- function(x) {
+    x / sum(x, na.rm=TRUE) * 1e6
+}
+```
+
+## Load counts and sample sheet
+
+```{r load_counts}
+sample_sheet <- read_csv("../input_experiment/QSData_samplesheet.csv") %>%
+    select(Sampleid = Sample.No., BioRep, Code, Strain, Condition, Time) %>%
+    mutate(Gat201 = factor(Strain %in% c("A","a"), 
+                           levels = c("TRUE","FALSE"),
+                           labels = c("WT", "delta"))
+           )
+
+counts_bygene_wide <- read_tsv("../quantseqfwd_EH_050221/counts.txt", comment = "#")
+counts_bygene_wide
+```
+
+## Make tidy (long-format) counts for plotting
+
+```{r make_tidy_counts, dependson = "load_counts"}
+counts_bygene_long <- counts_bygene_wide %>%
+    select(-Chr,-Start,-End,-Strand,-Length) %>%
+    pivot_longer(ends_with(".bam"), names_to = "Sampleid", values_to = "Count") %>%
+    mutate(Sampleid = str_extract(Sampleid, "[0-9b]*(?=_)")) %>%
+    group_by(Sampleid) %>%
+    mutate(TPM = calculate_cpm(Count)) %>%
+    ungroup() %>%
+    left_join(sample_sheet, by = "Sampleid") %>%
+    select(Sampleid, BioRep, Code, Strain, Gat201, Condition, Time, Geneid, Count, TPM)
+
+counts_bygene_long
+```
+
+## Plot some individual genes
+
+```{r plot_my_gene, dependson = "make_tidy_counts", fig.height = 3, fig.width = 3.5}
+plot_my_genes_RS_line <- function(mygenes = "CNAG_06125",
+                                  myconditions = c("Y","RS"),
+                                  mydata = counts_bygene_long) {
+    ggplot(data = filter(mydata, 
+                         Geneid %in% mygenes, 
+                         Condition %in% myconditions),
+           aes(x = Time, y = TPM, colour = Gat201)) +
+        geom_point(aes(shape = Strain)) +
+        stat_summary(aes(group=Gat201),geom="line",fun = mean) +
+        scale_y_log10() +
+        facet_wrap(~Geneid) +
+        scale_colour_manual(values = c("green4","purple"))
+}
+plot_my_genes_RS_line()
+plot_my_genes_RS_line("CNAG_01551")
+plot_my_genes_RS_line("CNAG_03012")
+plot_my_genes_RS_line("CNAG_06346")
+```
+
