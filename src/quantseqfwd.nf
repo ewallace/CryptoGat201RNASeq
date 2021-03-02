@@ -53,7 +53,7 @@ Run FastQC to produce a quality control report for the input data for every samp
 process runFastQC{
     errorStrategy 'ignore'
     tag "${sample_id}"
-    publishDir "${params.output_dir}/${sample_id}", pattern: '*.html', mode: 'copy', overwrite: true
+    publishDir "${params.output_dir}/${sample_id}", saveAs: { "${sample_id}_fastqc.zip" }, mode: 'copy', overwrite: true
     input:
         set sample_id, file(sample_fq) from input_fq_qc
 
@@ -68,23 +68,6 @@ process runFastQC{
     """
 }
 
-/*
-Run multiQC to collate single quality control report across all samples.
-*/
-
-process runMultiQC{
-    tag { "multiQC" }
-    publishDir "${params.output_dir}/qc_input", mode: 'copy', overwrite: true
-    input:
-        file('*') from fastqc_files.collect()
-
-    output:
-        file('multiqc_report.html')
-
-    """
-    multiqc .
-    """
-}
 
 /*
 Cut sequencing adapters from 3' end of gene
@@ -111,19 +94,23 @@ Align trimmed reads to the genome with hisat2
 process alignHisat2 {
     errorStrategy 'ignore'
     tag "${sample_id}"
+    publishDir "${params.output_dir}/${sample_id}", pattern: '*.hisat2_summary.txt', mode: 'copy', overwrite: true
     input:
         set sample_id, file(sample_fq) from cut_fq
         file(index_ht2_parts) from index_ht2_parts
     output:
         file("unaligned.fq") into unaligned_fq
+        file("${sample_id}.hisat2_summary.txt") into alignment_logs
         tuple val(sample_id), file("aligned.sam") into aligned_sam
     shell:
         """
         hisat2 --version
         hisat2 -p ${params.num_processes} -k 2 \
-            --no-spliced-alignment --rna-strandness F --no-unal \
+            --pen-cansplice 4 --pen-noncansplice 12 --min-intronlen 40  --max-intronlen 200 \
+            --rna-strandness F --no-unal \
             --un unaligned.fq -x ${params.index_prefix} \
-            -S aligned.sam -U ${sample_fq} 
+            -S aligned.sam -U ${sample_fq} \
+            --summary-file ${sample_id}.hisat2_summary.txt
         """
 }
 
@@ -209,4 +196,22 @@ process countAllmRNA {
         """
         featureCounts -T ${params.num_processes} -s 1 -t ${params.featuretype} -g ${params.featurename} -a ${mRNAgff} -o counts.txt ${sampleid_bams.join(" ")} 
         """
+}
+
+/*
+Run multiQC to collate single quality control report across all samples.
+*/
+
+process runMultiQC{
+    tag { "multiQC" }
+    publishDir "${params.output_dir}", mode: 'copy', overwrite: true
+    input:
+        file ('*') from fastqc_files.collect()
+        file ('*') from alignment_logs.collect()
+    output:
+        file('multiqc_report.html')
+
+    """
+    multiqc .
+    """
 }
