@@ -15,7 +15,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 ```
 
 # GAT201 RNA Seq analysis_EHughes
@@ -49,7 +49,7 @@ BiocManager::install("DESeq2")
 
 
 # Load packages used for analysis
-```{r Load packages used for analysis, }
+```{r Load packages used for analysis, include=FALSE}
 
 library(tidyr)
 library(readr)
@@ -259,7 +259,7 @@ counts_30m <- dplyr::select(counts, samplesheet_30m$SampleID) %>%
 
 (dds30m <- DESeqDataSetFromMatrix(countData = counts_30m,
                                  colData = samplesheet_30m,
-                                 design = ~ GAT201 + Strain))
+                                 design = ~ Condition + Strain))
 
 rld_30m <- rlog(dds30m)
            head(assay(rld_30m))
@@ -589,7 +589,7 @@ write.csv(mat4h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_des
 
 ```{r rld_30m Top 1000 list}
 topVarGenes1000_30m <- head(order(-rowVars(assay(rld_30m))),1000)
-print(topVarGenes1000_30m)
+head(topVarGenes1000_30m)
 write.csv(topVarGenes1000_30m, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/rld_30m_top1000.csv")
 
 mat30m <- assay(rld_30m)[ topVarGenes1000_30m, ]
@@ -602,7 +602,7 @@ write.csv(mat30m, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_de
 
 ```{r rld_2h Top 1000 list}
 topVarGenes1000_2h <- head(order(-rowVars(assay(rld_2h))),1000)
-print(topVarGenes1000_2h)
+head(topVarGenes1000_2h)
 write.csv(topVarGenes1000_2h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/rld_2h_top1000.csv")
 
 mat2h <- assay(rld_2h)[ topVarGenes1000_2h, ]
@@ -615,7 +615,7 @@ write.csv(mat2h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_des
 
 ```{r rld_4h Top 1000 list}
 topVarGenes1000_4h <- head(order(-rowVars(assay(rld_4h))),1000)
-print(topVarGenes1000_4h)
+head(topVarGenes1000_4h)
 write.csv(topVarGenes1000_4h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/rld_4h_top1000.csv")
 
 mat4h <- assay(rld_4h)[ topVarGenes1000_4h, ]
@@ -624,6 +624,11 @@ df <- as.data.frame(colData(rld_4h)[,c("Media","Strain")])
 pheatmap(mat4h, main = "Top 1000 genes at 4 hours", annotation_col=df, fontsize =10, fontsize_row = 3)
 write.csv(mat4h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/mat4h_top1000.csv")
 ```
+
+
+
+
+
 # Calculate DESeq2 fold-change and p-values
 
 Take 'samplesheet_4h' and 'counts_4h' and put into DESeq2.
@@ -642,9 +647,15 @@ dds_4h <- DESeqDataSetFromMatrix(countData = counts_4h,
 Intercept = mean gene expression. 
 
 Condition y v capsule = results you want
+Gat201 No v Yes, therefore induced genes are induced in WT and repressed genes are repressed in Wt and so induced in Gat201?
 ```{r Get results}
-resultsNames(dds_4h)
+ res_dds4h <- results(dds_4h)
+ head(res_dds4h)
+ sum(res_dds4h$padj <0.05, na.rm = T)
 ```
+2898 genes have an adjusted p-value less than 0.05 when comparing Gat201 No vs Yes.
+
+
 # Plot MA
 
 Pick out what we want.
@@ -670,14 +681,123 @@ You will get:
 5) pvalue (how likely diff is actually diff)
 
 6) adjusted p value (how likely diff is actually diff)
-```{r Plot MA}
-results_4h <- results(dds_4h,lfcThreshold = 0.05, alpha = 0.05)
-
-plotMA(results_4h, ylim=c(-5,5))
+```{r Plot MA_4h-1}
+MA_4h <- results(dds_4h,lfcThreshold = 0.05, alpha = 0.05)
+plotMA(MA_4h, ylim=c(-5,5))
 print(plotMA)
-summary(results_4h)
+summary(MA_4h)
+```
+
+# Significant Genes
+
+Use the same values for our cutoff to determine which genes we want to consider as significantly differentially expressed. 
+The 'resSigind' variable will contain genes that are induced and 'resSigrep' will contain genes that are repressed when comparing WT with Gat201 deletion mutants. 
+To create one dataframe of differentially expressed genes, combine the two dataframe's. 
+Use the 'rbind' command because the columns are the same in both sets. 
+Use 'rownames' to see the names of the differentially expressed genes.
+
+## Significant genes at 0 hours
+```{r Plot MA_0h}
+dds_0h <- DESeqDataSetFromMatrix(countData = counts_0h,
+                              colData = samplesheet_0h,
+                              design = ~ GAT201) %>%
+           DESeq()
+res_dds0h <- results(dds_0h)
+             head(res_dds0h)
+             sum(res_dds0h$padj <0.05, na.rm = T)
+ 
+ 
+MA_0h <- results(dds_0h,lfcThreshold = 0.05, alpha = 0.05)
+         plotMA(MA_0h, ylim=c(-5,5))
+         print(plotMA)
+         summary(MA_0h)
+ 
+
+resSigind = res_dds0h[ which(res_dds0h$padj < 0.05 & res_dds0h$log2FoldChange > 0), ]
+resSigrep = res_dds0h[ which(res_dds0h$padj < 0.05 & res_dds0h$log2FoldChange < 0), ]
+resSig = rbind(resSigind, resSigrep)
+
+write.csv(rownames(resSigind), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds0h_resSigind.csv")
+write.csv(rownames(resSigrep), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds0h_resSigrep.csv")
+```
+## Significant genes at 30 mins
+
+```{r Plot MA_30m}
+dds_30m <- DESeqDataSetFromMatrix(countData = counts_30m,
+                              colData = samplesheet_30m,
+                              design = ~ GAT201) %>%
+           DESeq()
+res_dds30m <- results(dds_30m)
+             head(res_dds30m)
+             sum(res_dds30m$padj <0.05, na.rm = T)
+ 
+ 
+MA_30m <- results(dds_30m,lfcThreshold = 0.05, alpha = 0.05)
+         plotMA(MA_30m, ylim=c(-5,5))
+         print(plotMA)
+         summary(MA_30m)
+         
+resSigind = res_dds30m[ which(res_dds30m$padj < 0.05 & res_dds30m$log2FoldChange > 0), ]
+resSigrep = res_dds30m[ which(res_dds30m$padj < 0.05 & res_dds30m$log2FoldChange < 0), ]
+resSig = rbind(resSigind, resSigrep)
+
+write.csv(rownames(resSigind), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds30m_resSigind.csv")
+write.csv(rownames(resSigrep), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds30m_resSigrep.csv")
+```
+## Significant genes at 2 hours
+
+```{r Plot MA_2h}
+dds_2h <- DESeqDataSetFromMatrix(countData = counts_2h,
+                              colData = samplesheet_2h,
+                              design = ~ GAT201) %>%
+           DESeq()
+res_dds2h <- results(dds_2h)
+             head(res_dds2h)
+             sum(res_dds2h$padj <0.05, na.rm = T)
+ 
+ 
+MA_2h <- results(dds_2h,lfcThreshold = 0.05, alpha = 0.05)
+         plotMA(MA_2h, ylim=c(-5,5))
+         print(plotMA)
+         summary(MA_2h)
+         
+resSigind = res_dds2h[ which(res_dds2h$padj < 0.05 & res_dds2h$log2FoldChange > 0), ]
+resSigrep = res_dds2h[ which(res_dds2h$padj < 0.05 & res_dds2h$log2FoldChange < 0), ]
+resSig = rbind(resSigind, resSigrep)
+
+write.csv(rownames(resSigind), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds2h_resSigind.csv")
+write.csv(rownames(resSigrep), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds2h_resSigrep.csv")
+```
+## Significant genes at 4 hours
+
+```{r Plot MA_4h}
+dds_4h <- DESeqDataSetFromMatrix(countData = counts_4h,
+                              colData = samplesheet_4h,
+                              design = ~ GAT201) %>%
+           DESeq()
+res_dds4h <- results(dds_4h)
+             head(res_dds4h)
+             sum(res_dds4h$padj <0.05, na.rm = T)
+ 
+ 
+MA_0h <- results(dds_4h,lfcThreshold = 0.05, alpha = 0.05)
+         plotMA(MA_4h, ylim=c(-5,5))
+         print(plotMA)
+         summary(MA_4h)
+         
+resSigind = res_dds4h[ which(res_dds4h$padj < 0.05 & res_dds4h$log2FoldChange > 0), ]
+resSigrep = res_dds4h[ which(res_dds4h$padj < 0.05 & res_dds4h$log2FoldChange < 0), ]
+resSig_4h = rbind(resSigind, resSigrep)
+
+write.csv(rownames(resSigind), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds4h_resSigind.csv")
+write.csv(rownames(resSigrep), file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds4h_resSigrep.csv")
+
 ```
 
 
+# Gene Annotation
+```{r Gene Annotations}
+GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/GeneDescription.csv")
 
+```
 
