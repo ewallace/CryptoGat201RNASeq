@@ -15,7 +15,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 ```
 
 # GAT201 RNA Seq analysis_EHughes
@@ -64,8 +64,10 @@ geom_diagline <- function(size = 0.5, linetype = "dashed", ...) {
 ```{r Load count data }
 counts <- read_tsv("~/Documents/GitHub/CryptoGat201RNASeq_draft/quantseqfwd_EH_050221/counts.txt",
                    comment = "#")
-counts
+head (counts)
 ```
+
+
 
 # Make a clustered heatmap of count data showing similarity between all samples
 
@@ -150,7 +152,7 @@ counts_long <- counts %>%
               mutate(FoldChange = TPM / mean(TPM)) %>%
               ungroup() %>%
               left_join(samplesheet)
-counts_long
+head(counts_long)
 ```
 
 # Write long-format counts to an output file
@@ -160,6 +162,7 @@ This is very long because for each gene we have lots of info.
 counts_long %>%
     select(Geneid,SampleID,Strain,Condition,Time,BioRep,Count,TPM) %>%
     mutate(TPM = round(TPM, digits = 3)) %>%
+  dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, Yes = c("a","A"), No = c("B","M")))
     write_tsv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/counts_tpms_longformat.txt")
 ```
 
