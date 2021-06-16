@@ -1,0 +1,34 @@
+---
+title: "H99 GFF3 file"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+
+
+```{r}
+library(tidyr)
+library(readr)
+library(dplyr)
+```
+
+
+```{r }
+gene_description <- read.delim("~/Documents/GitHub/CryptoGat201RNASeq_draft/input_annotation/H99.10p.aATGcorrected.2018-12-03.gff3",
+header=FALSE, quote="")
+```
+
+
+
+```{r }
+Gene_desc_new <- filter(gene_description, V3 == "mRNA")%>% 
+                 separate(V9,into = c("ID", "Parent", "Name", "Codon_start", "Locua", "Product"),
+                 sep=";",
+                 remove = FALSE)
+write.csv(Gene_desc_new, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/GeneDescription.csv")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
