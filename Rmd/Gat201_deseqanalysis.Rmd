@@ -796,8 +796,29 @@ write.csv(rownames(resSigrep), file = "~/Documents/GitHub/CryptoGat201RNASeq_dra
 
 
 # Gene Annotation
-```{r Gene Annotations}
-GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/GeneDescription.csv")
+```{r prepare GeneList}
+GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/gene_name_product.csv")
+GeneList <- select(GeneDescription, -X1)
+head(GeneList)
+```
+
+```{r prepare res_ddsx_resy files}
+
+UP4h <- read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds4h_resSigind.csv")
+UP4h1 <- select(UP4h, -X1)
+UP4hList<- dplyr::rename(UP4h1, Gene = x)  
+head(UP4hList)
+
+```
+
+
+
+
+
+```{r Match DE genes lists to GeneList 4h}
+DE4hUP<- dplyr::inner_join(UP4hList,GeneList)
+head(DE4hUP)
+write.csv(DE4hUP, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/DE4hUP.csv")
 
 ```
 
