@@ -819,6 +819,7 @@ head(UP4hList)
 DE4hUP<- dplyr::inner_join(UP4hList,GeneList)
 head(DE4hUP)
 write.csv(DE4hUP, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/DE4hUP.csv")
+summary(DE4hUP)
 
 ```
 
