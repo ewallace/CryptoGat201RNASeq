@@ -1,5 +1,5 @@
 ---
-title: "Gat201 RNA Seq Deseqcanalysisc 2021-04-29"
+title: "Gat201 RNA Seq Deseqcanalysis 2021-04-29"
 author: "Liz Hughes"
 date: "29/04/2021"
 output:
