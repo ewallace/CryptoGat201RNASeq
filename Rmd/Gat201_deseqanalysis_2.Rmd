@@ -123,8 +123,16 @@ dds_0h <- DESeqDataSetFromMatrix(countData = counts_0h,
 
 resultsNames(dds_0h)
 results_0h <- results(dds_0h, name="GAT201_No_vs_Yes")
-plotMA(results_0h, ylim=c(-5,5))
 
+
+jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds0h.jpeg")
+MAplot_dds0h <- plotMA(results_0h, 
+       ylim=c(-5,5), alpha=.05)
+dev.off()
+         
+```
+
+```{r DESeq0hcontd}
 tresults_0h <- biobroom::tidy.DESeqResults(results_0h)
 head(tresults_0h)
 
@@ -246,7 +254,12 @@ dds_30m <- DESeqDataSetFromMatrix(countData = counts_30m,
 
 resultsNames(dds_30m)
 results_30m <- results(dds_30m, name="GAT201_No_vs_Yes")
-plotMA(results_30m, ylim=c(-5,5))
+
+jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds30m.jpeg")
+MAplot_dds30m <- plotMA(results_30m, 
+       ylim=c(-5,5), alpha=.05)
+dev.off()
+         
 
 tresults_30m <- biobroom::tidy.DESeqResults(results_30m)
 head(tresults_30m)
@@ -359,7 +372,11 @@ dds_2h <- DESeqDataSetFromMatrix(countData = counts_2h,
 
 resultsNames(dds_2h)
 results_2h <- results(dds_2h, name="GAT201_No_vs_Yes")
-plotMA(results_2h, ylim=c(-5,5))
+
+jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds2h.jpeg")
+MAplot_dds2h <- plotMA(results_2h, 
+       ylim=c(-5,5), alpha=.05)
+dev.off()
 
 tresults_2h <- biobroom::tidy.DESeqResults(results_2h)
 head(tresults_2h)
@@ -481,10 +498,34 @@ dds_4h <- DESeqDataSetFromMatrix(countData = counts_4h,
 ### MA plot 4h
 ```{r result DESeq4h WT v GAT201}
 resultsNames(dds_4h)
-results_4h <- results(dds_4h, name="GAT201_No_vs_Yes")
-plotMA(results_4h, ylim=c(-5,5))
+results_4h <- results(dds_4h, name="GAT201_No_vs_Yes", alpha=.05)
+
+jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds4ha.jpeg")
+plotMA(results_4h,  ylim=c(-5,5))
+dev.off()
 
 ```
+
+
+results_4h$Symbol <- paste0("Symbol", 1:6795)
+plotMA(results_4h, ylim = c(-5,5))
+with(subset(res, symbol == "1551"), {
+  points(baseMean, log2FoldChange, col = "dodgerblue", cex = 2, lwd = 2)
+  text(baseMean, log2FoldChange, "1551", pos = 2, col = "dodgerblue")
+})
+res4h_df <- results_4h %>%
+    as.data.frame() %>%
+    dplyr::mutate(significant = padj < 0.5)
+
+res4h_labelled <- res4h_df %>%
+    dplyr::filter(significant)
+    
+ggplot(res4h_df, aes(x=log2(baseMean), y=log2FoldChange, colour=significant)) +
+    geom_point() +
+    ggrepel::geom_label_repel(data=res4h_labelled, aes(label=Symbol)) +
+    theme_bw()
+
+
 ### Tidy version of results_4h
 'tidy.DESeqResults' takes big object and just gives the data frame for results_4h
 
@@ -517,7 +558,7 @@ de_Gat201up_4h <- dplyr::filter(tresults_4h, estimate > 0, p.adjusted < 0.05) %>
 de_Gat201up_4h
 
 readr::write_tsv(de_Gat201up_4h, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201up_DEseq2_padj0p05_4h.txt")
-readr::write_lines(de_Gat201up_4h$gene, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201up_DEseq2_padj0p05_4h_genesonly.txt")
+readr::write_lines(de_Gat201up_4h$gene, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201up_DEseq2_padj0p05_4h_genesonly.csv")
                 
 ```
 ### Gat201 deletion (GAT201 = no) v WT (GAT201 = yes) DOWN 4h only
@@ -1068,5 +1109,29 @@ volcano_0_4n
 ```{r save volcano_0_4n}
 ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/0v4nWT.png",
        width = 5,height=5)
+```
+
+# Gene Annotation
+```{r prepare GeneList}
+GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/gene_name_product.csv")
+GeneList <- select(GeneDescription, -X1)
+head(GeneList)
+```
+
+```{r prepare Gat201upGeneList}
+Gat201up_genesonly <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201up_DEseq2_padj0p05_4h_genesonly.csv")
+
+head(Gat201up_genesonly)
+
+```
+
+# Match up-regulated genes to annotation file
+ 
+```{r Match DE genes lists to GeneList 4h}
+Gat201_4hUP<- dplyr::inner_join(Gat201up_genesonly,GeneList)
+head(Gat201_4hUP)
+write.csv(Gat201_4hUP, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201_4hUP.csv")
+summary(Gat201_4hUP)
+
 ```
 
