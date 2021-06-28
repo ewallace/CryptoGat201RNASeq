@@ -206,7 +206,8 @@ pheatmap(sampleDistMatrix,
          clustering_distance_rows=sampleDists_all,
          clustering_distance_cols=sampleDists_all,
          col=colors, cex = 0.7,
-         main = "Heatmap of SampleDists_all")
+         main = "Heatmap of SampleDists_all", 
+         filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap of SampleDists_all.jpg")
 
 ```
 
@@ -243,7 +244,8 @@ pheatmap(sampleDistMatrix_0h,
          clustering_distance_rows=sampleDists_0h,
          clustering_distance_cols=sampleDists_0h,
          col=colors, cex = 1,
-         main = "Heatmap of SampleDists_0h")
+         main = "Heatmap of SampleDists_0h",
+         filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap of SampleDists_0h.jpg")
 
 ```
 
@@ -277,7 +279,8 @@ pheatmap(sampleDistMatrix_30m,
          clustering_distance_rows=sampleDists_30m,
          clustering_distance_cols=sampleDists_30m,
          col=colors, cex = 1,
-         main = "Heatmap of SampleDists_30m")
+         main = "Heatmap of SampleDists_30m",
+         filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap of SampleDists_30m.jpg")
 ```
 
 
@@ -310,7 +313,8 @@ pheatmap(sampleDistMatrix_2h,
          clustering_distance_rows=sampleDists_2h,
          clustering_distance_cols=sampleDists_2h,
          col=colors, cex = 1,
-         main = "Heatmap of SampleDists_2h")
+         main = "Heatmap of SampleDists_2h",
+         filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap of SampleDists_2h.jpg")
 
 ```
 
@@ -344,7 +348,8 @@ pheatmap(sampleDistMatrix_4h,
          clustering_distance_rows=sampleDists_4h,
          clustering_distance_cols=sampleDists_4h,
          col=colors, cex = 1,
-         main = "Heatmap of SampleDists_4h")
+         main = "Heatmap of SampleDists_4h",
+         filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap of SampleDists_4h.jpg")
 
 ```
 
@@ -354,6 +359,7 @@ pheatmap(sampleDistMatrix_4h,
 
 ```{r PCA Plot rld_0h}
 plotPCA(rld_0h, intgroup = c("Strain", "Condition"))
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/PC12_0h.jpeg")
        
 ```
 How to add a title?
@@ -362,16 +368,19 @@ How to add a title?
 ## Plot PCA for 30min
 ```{r PCA Plot rld_30m}
 plotPCA(rld_30m, intgroup = c("Strain", "Condition"))
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/PC12_30m.jpeg")
 ```
 
 ## Plot PCA for 2h
 ```{r PCA Plot rld_2h}
 plotPCA(rld_2h, intgroup = c("Strain", "Condition"))
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/PC12_2h.jpeg")
 ```
 
 ## Plot PCA for 4h
 ```{r PCA Plot rld_4h}
 plotPCA(rld_4h, intgroup = c("Strain", "Condition"))
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/PC12_4h.jpeg")
 ```
 
 # Differential gene expression testing
@@ -524,7 +533,7 @@ The heatmap becomes more interesting if we do not look at absolute expression st
 mat4h <- assay(rld_4h)[ topVarGenes50, ]
 mat4h <- mat4h - rowMeans(mat4h)
 df <- as.data.frame(colData(rld_4h)[,c("Media","Strain")])
-pheatmap(mat4h, main = "Top 50 genes at 4 hours", annotation_col=df, fontsize =10, fontsize_row = 4)
+pheatmap(mat4h, main = "Top 50 genes at 4 hours", annotation_col=df, fontsize =10, fontsize_row = 4, filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/Heatmap4h_top50.jpg")
 write.csv(mat4h, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/mat4h_top50.csv")
 ```
 
