@@ -163,8 +163,10 @@ counts_long %>%
     select(Geneid,SampleID,Strain,Condition,Time,BioRep,Count,TPM) %>%
     mutate(TPM = round(TPM, digits = 3)) %>%
   dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, Yes = c("a","A"), No = c("B","M")))
-    write_tsv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/counts_tpms_longformat.txt")
 ```
+
+    write_tsv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/counts_tpms_longformat.txt")
+
 
 # Define a function to plot TPMs for a select list of genes
 Write as a function so only have to change gene names once on line 170
@@ -186,7 +188,7 @@ plot_tpm_somegenes <- function(mygenes = c("CNAG_01551","CNAG_06917"),
 }
 ```
 
-# Plot TPMs for two genes: Change genes in code above line 170
+# Plot TPMs for two genes: Change genes in code above {r Define a function to plot TPMs}
 
 ```{r Plot TPMs}
 plot_tpm_somegenes()
@@ -195,7 +197,7 @@ plot_tpm_somegenes()
 # Remember to change name to genes from line 170
 
 ```{r Save Plot TPMs}
-ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/TPM_Gat201_TSA3.pdf",
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/TPM_Gat201_TSA3.jpeg",
        width = 5,height=4)
 ```
 
@@ -206,9 +208,11 @@ This reshapse 'counts_long' using 'pivot_wider'
 
 'Geneid' take names used from 'SampleID' and the values used from 'TPM'
 
-```{r Reshape the TPMs into a "wide" table}
+```{r Reshape the TPMs into a wide table}
+
 tpms_wide <- counts_long %>%
               pivot_wider(id_cols = Geneid, names_from = SampleID, values_from = TPM)
+
 
 ```
 
@@ -276,12 +280,14 @@ Heatmap <- foldchange_wide %>%
     filter(Geneid %in% genelist_mintpm20) %>%
     .[,-1] %>%
     log10() %>%
-    pheatmap(main = "Heatmap of FoldChange, genes with min(TPM) > 20",show_rownames = FALSE,
-             color = colorRampPalette(c("yellow", "orange","red"))(31),
-             breaks = seq(-1.1,1.1,length=32))
-
+    pheatmap(main = "Heatmap of FoldChange, genes with min(TPM) > 20",
+             show_rownames = FALSE,
+             color = colorRampPalette(c("blue", "white","red"))(31),
+             breaks = seq(-1.1,1.1,length=32), 
+             filename = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/Heatmap_Foldchange_mintpm20.pdf")
+Heatmap
 ```
-
+ 
 # To print heatmap above
 
 ```{r Print heatmap}
@@ -323,12 +329,12 @@ pca_log10foldchange_mintpm20 %>%
     geom_hline(aes(yintercept = 0),size=0.2,colour = "grey50")  +
     geom_text(
         aes(label = SampleID,colour=Condition),
-        key_glyph = "point"
+        key_glyph = "point",
     ) +
     coord_equal()
 
 
-ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/plot_pca_log10foldchange_mintpm20_PC12.pdf",
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/plot_pca_log10foldchange_mintpm20_PC12.jpeg",
        plot_pca_log10foldchange_mintpm20_PC12,width = 4,height=4)
 plot_pca_log10foldchange_mintpm20_PC12
 ```
