@@ -1,5 +1,5 @@
 ---
-title: "Gat201 RNA Seq Deseqcanalysis 2021-04-29"
+title: "Gat201 RNA Seq Deseqanalysis 2021-04-29"
 author: "Liz Hughes"
 date: "29/04/2021"
 output:
@@ -28,7 +28,7 @@ Work flow: Reverse transcription ⇒ Removal of RNA ⇒ Second strand synthesis 
 
 2 conditions: RPMI and RPMI+Serum (10%).
 
-2 BioReps and 3 Tech Reps.
+2 BioReps for each strain.
 
 A single colony was grown in YPD, 30 degrees, 200rpm for 5 days.
 
@@ -789,7 +789,7 @@ res_dds4h <- results(dds_4h)
              sum(res_dds4h$padj <0.05, na.rm = T)
  
  
-MA_0h <- results(dds_4h,lfcThreshold = 0.05, alpha = 0.05)
+MA_4h <- results(dds_4h,lfcThreshold = 0.05, alpha = 0.05)
          plotMA(MA_4h, ylim=c(-5,5))
          print(plotMA)
          summary(MA_4h)

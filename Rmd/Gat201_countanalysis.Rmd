@@ -28,7 +28,7 @@ Work flow: Reverse transcription ⇒ Removal of RNA ⇒ Second strand synthesis 
 
 2 conditions: RPMI and RPMI+Serum (10%).
 
-2 BioReps and 3 Tech Reps.
+2 BioReps for each strain.
 
 A single colony was grown in YPD, 30 degrees, 200rpm for 5 days.
 
@@ -414,6 +414,28 @@ Blue = Y at 0 mis.
 
 37,40,51,54 (Green) = Gat201 B/M RS at 30 min.
 
+
+## Plot  fourth and fifthprincipal components by sample
+```{r PC45}
+plot_pca_log10foldchange_mintpm20_PC45 <- 
+pca_log10foldchange_mintpm20 %>%
+    broom::tidy(matrix = "rotation") %>%
+    rename(SampleID=column) %>%
+    left_join(samplesheet) %>%
+    pivot_wider(names_from = "PC", names_prefix = "PC", values_from = "value") %>%
+    ggplot(aes(PC4, PC5)) +
+    geom_vline(aes(xintercept = 0),size=0.2,colour = "grey50") +
+    geom_hline(aes(yintercept = 0),size=0.2,colour = "grey50")  +
+    geom_text(
+        aes(label = SampleID,colour=Condition),
+        key_glyph = "point"
+    ) +
+    coord_equal()
+plot_pca_log10foldchange_mintpm20_PC45
+
+ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_counts/plot_pca_log10foldchange_mintpm20_PC45.pdf",
+       plot_pca_log10foldchange_mintpm20_PC45,width = 4,height=4)
+```
 
 ## Plot PCA loadings, i.e. percent variance explained by each PC
 ```{r Plot PCA loadings}
