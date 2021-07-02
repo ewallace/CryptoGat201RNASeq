@@ -121,8 +121,11 @@ dds_0h <- DESeqDataSetFromMatrix(countData = counts_0h,
                                  design = ~ GAT201)%>%
         DESeq()
 ```
+```{r}
 resultsNames(dds_0h)
 results_0h <- results(dds_0h, name="GAT201_No_vs_Yes")
+
+```
 
 jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds0h.jpeg")
 MAplot_dds0h <- plotMA(results_0h, ylim=c(-5,5), alpha=.05)
@@ -133,18 +136,18 @@ dev.off()
 
 ```{r}
 jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds0h.jpeg")
-MAplot_dds0h <- plotMA(results_0h, ylim=c(-5,5), alpha=.05)
+MAplot_dds0h <- plotMA(results_0h, ylim=c(-7,7), alpha=.05)
 with(results_0h["CNAG_01551", ], {
   points(baseMean, log2FoldChange, col="red", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "Gat201", pos=2, col="red")
+  text(baseMean, log2FoldChange, "Gat201", cex =2, pos=2, col="red")
 })+
  with(results_0h["CNAG_06568", ], {
   points(baseMean, log2FoldChange, col="darkgreen", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "SKS1", pos=3, col="darkgreen")
+  text(baseMean, log2FoldChange, "SKS1", cex =2,pos=3, col="darkgreen")
  })+
    with(results_0h["CNAG_01980", ], {
   points(baseMean, log2FoldChange, col="magenta", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "HP", pos=3, col="magenta")
+  text(baseMean, log2FoldChange, "HP", cex =2 ,pos=3, col="magenta")
    })
 
 dev.off()
@@ -374,18 +377,18 @@ ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201vWT_30
 
 ```{r}
 jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds30m.jpeg")
-MAplot_dds30m <- plotMA(results_30m, ylim=c(-5,5), alpha=.05)
+MAplot_dds30m <- plotMA(results_30m, ylim=c(-7,7), alpha=.05)
 with(results_30m["CNAG_01551", ], {
   points(baseMean, log2FoldChange, col="red", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "Gat201", pos=2, col="red")
+  text(baseMean, log2FoldChange, "Gat201", cex =2 ,pos=2, col="red")
 })+
  with(results_30m["CNAG_06568", ], {
   points(baseMean, log2FoldChange, col="darkgreen", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "SKS1", pos=3, col="darkgreen")
+  text(baseMean, log2FoldChange, "SKS1", cex =2 ,pos=3, col="darkgreen")
  })+
    with(results_30m["CNAG_01980", ], {
   points(baseMean, log2FoldChange, col="magenta", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "HP", pos=3, col="magenta")
+  text(baseMean, log2FoldChange, "HP", cex =2 ,pos=4, col="magenta")
    })
 dev.off()
 ```
@@ -509,18 +512,18 @@ ggsave("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Gat201vWT_2h
 
 ```{r}
 jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds2h.jpeg")
-MAplot_dds2h <- plotMA(results_2h, ylim=c(-6,6), alpha=.05)
+MAplot_dds2h <- plotMA(results_2h, ylim=c(-7,7), alpha=.05)
 with(results_2h["CNAG_01551", ], {
   points(baseMean, log2FoldChange, col="red", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "Gat201", pos=2, col="red")
+  text(baseMean, log2FoldChange, "Gat201", cex =2 ,pos=2, col="red")
 })+
  with(results_2h["CNAG_06568", ], {
   points(baseMean, log2FoldChange, col="darkgreen", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "SKS1", pos=4, col="darkgreen")
+  text(baseMean, log2FoldChange, "SKS1", cex =2 ,pos=4, col="darkgreen")
 }) +
    with(results_2h["CNAG_01980", ], {
   points(baseMean, log2FoldChange, col="magenta", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "HP", pos=3, col="magenta")
+  text(baseMean, log2FoldChange, "HP", cex =2 ,pos=3, col="magenta")
    })
 dev.off()
 
@@ -543,6 +546,9 @@ dds_4h <- DESeqDataSetFromMatrix(countData = counts_4h,
                                  colData = samplesheet_4h,
                                  design = ~ GAT201)%>%
         DESeq()
+
+resultsNames(dds_4h)
+results_4h <- results(dds_4h, name="GAT201_No_vs_Yes")
 ```
 
 ### Tidy version of results_4h
@@ -688,15 +694,15 @@ jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_d
 MAplot_dds4h <- plotMA(results_4h, ylim=c(-7,7), alpha=.05)
 with(results_4h["CNAG_01551", ], {
   points(baseMean, log2FoldChange, col="red", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "Gat201", pos=2, col="red")
+  text(baseMean, log2FoldChange, "Gat201", cex =2 ,pos=2, col="red")
 })+
  with(results_4h["CNAG_06568", ], {
   points(baseMean, log2FoldChange, col="darkgreen", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "SKS1", pos=3, col="darkgreen")
+  text(baseMean, log2FoldChange, "SKS1", cex =2 ,pos=3, col="darkgreen")
  })+
    with(results_4h["CNAG_01980", ], {
   points(baseMean, log2FoldChange, col="magenta", cex=2, lwd=2)
-  text(baseMean, log2FoldChange, "HP", pos=3, col="magenta")
+  text(baseMean, log2FoldChange, "HP", cex =2 ,pos=3, col="magenta")
    })
 dev.off()
 
@@ -1236,12 +1242,121 @@ summary(Gat2014hUP)
 
 ```
 
+# GO visualisation
 
+```{r R0down}
 
+R_0_down <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/0downall.csv")
+head(R_0_down)
 
+ggplot(R_0_down, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity")+
+ 
+  labs(title = "GO: 0 Hours Down",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_0down.png",
+       width = 6,height=5)
 
+ 
 
-# 
+```
+
+```{r R30up}
+
+R_30_up <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/30upall.csv")
+head(R_30_up)
+
+ggplot(R_30_up, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity")+
+ 
+  labs(title = "GO: 30 Min Up",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_30up.png",
+       width = 6,height=5)
+
+ 
+
+```
+
+```{r R2down}
+
+R_2_down <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/2downall.csv")
+head(R_2_down)
+
+ggplot(R_2_down, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity", width = 0.3)+
+ 
+  labs(title = "GO: 2 Hours Down",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_2down.png",
+       width = 6,height=5)
+
+ 
+
+```
+
+```{r R2dup}
+
+R_2_Up <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/2upall.csv")
+head(R_2_Up)
+
+ggplot(R_2_Up, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity")+
+ 
+  labs(title = "GO: 2 Hours Up",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_2up.png",
+       width = 6,height=5)
+
+ 
+
+```
+ 
+```{r R4down}
+
+R_4_down <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/4downall.csv")
+head(R_4_down)
+
+ggplot(R_4_down, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity", width = 0.5)+
+ 
+  labs(title = "GO: 4 Hours Down",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_4down.png",
+       width = 6,height=5)
+
+```
+ 
+ 
+```{r R4up}
+
+R_4_Up <- readr::read_csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/4upall.csv")
+head(R_4_Up)
+
+ggplot(R_4_Up, aes(Frequency, Name, fill = Name))+
+  theme(legend.position ="none")+
+geom_bar(stat = "identity")+
+ 
+  labs(title = "GO: 4 Hours Up",
+       x = "Frequency", y = "")
+ggsave("~/Documents/Edward Wallace/Lab based work/RNA Seq/Wake up 3/GOanalysis_2fold/R_4up.png",
+       width = 6,height=5)
+
+``` 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
 
 
