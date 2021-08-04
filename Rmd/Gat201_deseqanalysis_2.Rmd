@@ -71,9 +71,9 @@ theme_set(
 
 ```{r define colours}
 WTup_colour   = "orange"
-WTdown_colour = "green"
-Gat201up_colour  = "red"
-Gat201down_colour = "blue"
+WTdown_colour = "darkgreen"
+Gat201up_colour  = "green"
+Gat201down_colour = "purple"
 ```
 
 
@@ -293,7 +293,7 @@ de_Gat201up_30m
 readr::write_tsv(de_Gat201up_30m, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_30m.txt")
 readr::write_lines(de_Gat201up_30m$gene, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_30m_genesonly.csv")
 
-de_Gat201down_30m <- dplyr::filter(tresults_30m, estimate < 1, p.adjusted < 0.05) %>%
+de_Gat201down_30m <- dplyr::filter(tresults_30m, estimate < -1, p.adjusted < 0.05) %>%
                 dplyr::arrange(estimate)
 de_Gat201down_30m
 
@@ -426,7 +426,7 @@ de_Gat201up_2h
 readr::write_tsv(de_Gat201up_2h, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_2h.txt")
 readr::write_lines(de_Gat201up_2h$gene, "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_2h_genesonly.csv")
 
-de_Gat201down_2h <- dplyr::filter(tresults_2h, estimate < 1, p.adjusted < 0.05) %>%
+de_Gat201down_2h <- dplyr::filter(tresults_2h, estimate < -1, p.adjusted < 0.05) %>%
                 dplyr::arrange(estimate)
 de_Gat201down_2h
 
@@ -590,7 +590,7 @@ readr::write_lines(de_Gat201up_4h$gene, "~/Documents/GitHub/CryptoGat201RNASeq_d
 values negative since down regulated
 
 ```{r de_Gat201down_4h}
-de_Gat201down_4h <- dplyr::filter(tresults_4h, estimate < 1, p.adjusted < 0.05) %>%
+de_Gat201down_4h <- dplyr::filter(tresults_4h, estimate < -1, p.adjusted < 0.05) %>%
                 dplyr::arrange(estimate)
 de_Gat201down_4h
 
@@ -1151,7 +1151,7 @@ head(GeneList)
 Gat201down_genes_0h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201down_padj05_0h_genesonly.csv")
 head(Gat201down_genes_0h)
 
-Gat201_0hDOWN<- dplyr::inner_join(Gat201down_genes_0h, GeneList)
+Gat201_0hDOWN <- dplyr::inner_join(Gat201down_genes_0h, GeneList)
 head(Gat201_0hDOWN)
 
 write.csv(Gat201_0hDOWN, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201_0hDOWN.csv")
@@ -1670,8 +1670,194 @@ dev.off()
 ```
 
 
+# Cryptococcus Volcano plot TF labelled
+
+ 
+```{r volcano_0hrs_TF}
+
+volcano_0hTF <- 
+  ggplot(data = tresults_0h, aes(x=estimate,y=-log10(p.value))) +
+         geom_point(colour = "grey50",size = 0.5) +
+         geom_point(data = de_Gat201up_0h, colour = Gat201up_colour) +
+         geom_point(data = de_Gat201down_0h, colour = Gat201down_colour) +
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_02774"), label="mAL13",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04841"), label="FZCV43",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_06483"), label="FZC25",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_01438"), label="SW16",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04345"), label="ARO8001",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04398"), label="ARO80",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_00239"), label="YAP1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_06762"), label="Gat204",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_06276"), label="CEP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_03561"), label="FZC33",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_00559"), label="BZP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_06814"), label="Sx1-7a",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_03346"), label="BZP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04807"), label="FZC8",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_05392"), label="ZAP104",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04518"), label="ZFC5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_00460"), label="Liv1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_01858"), label="HOB2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_04176"), label="HSF2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_03894"), label="PDR802",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_00332"), label="SIP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_05153"), label="GAT5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_03741"), label="FZC31",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_0h, gene =="CNAG_07411"), label="RUM1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    
+         scale_y_continuous(breaks = c(0,5,10,15,20),
+                            limits = c(0,20), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        scale_x_continuous(breaks = seq(-5,5,1),
+                            limits = c(-5,5), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        labs(x = "log2-fold change",
+             y = "-log10(p.value)",
+             title = "Gat201 mutants v WT at 0h")
+volcano_0hTF
+
+```
+
+ 
+```{r volcano_30m_TF}
+volcano_30mTF <- 
+  ggplot(data = tresults_30m, aes(x=estimate,y=-log10(p.value))) +
+         geom_point(colour = "grey50",size = 0.5) +
+         geom_point(data = de_Gat201up_30m, colour = Gat201up_colour) +
+         geom_point(data = de_Gat201down_30m, colour = Gat201down_colour) +
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_02774"), label="mAL13",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04841"), label="FZCV43",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_06483"), label="FZC25",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_01438"), label="SW16",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04345"), label="ARO8001",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04398"), label="ARO80",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_00239"), label="YAP1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_06762"), label="Gat204",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_06276"), label="CEP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_03561"), label="FZC33",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_00559"), label="BZP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_06814"), label="Sx1-7a",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_03346"), label="BZP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04807"), label="FZC8",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_05392"), label="ZAP104",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04518"), label="ZFC5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_00460"), label="Liv1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_01858"), label="HOB2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_04176"), label="HSF2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_03894"), label="PDR802",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_00332"), label="SIP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_05153"), label="GAT5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_03741"), label="FZC31",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_30m, gene =="CNAG_07411"), label="RUM1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    
+          scale_y_continuous(breaks = c(0,10,20,30,40,50,60),
+                            limits = c(0,60), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        scale_x_continuous(breaks = seq(-5,5,1),
+                            limits = c(-5,5), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        labs(x = "log2-fold change",
+        title = "Gat201 mutants v WT at 30 min")
+volcano_30mTF
+
+```
+
+ 
+```{r volcano_2hrs_TF}
+volcano2hTF <- 
+  ggplot(data = tresults_2h, aes(x=estimate,y=-log10(p.value))) +
+         geom_point(colour = "grey50",size = 0.5) +
+         geom_point(data = de_Gat201up_2h, colour = Gat201up_colour) +
+         geom_point(data = de_Gat201down_2h, colour = Gat201down_colour) +
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_02774"), label="mAL13",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04841"), label="FZCV43",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_06483"), label="FZC25",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_01438"), label="SW16",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04345"), label="ARO8001",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04398"), label="ARO80",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_00239"), label="YAP1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_06762"), label="Gat204",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_06276"), label="CEP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_03561"), label="FZC33",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_00559"), label="BZP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_06814"), label="Sx1-7a",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_03346"), label="BZP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04807"), label="FZC8",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_05392"), label="ZAP104",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04518"), label="ZFC5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_00460"), label="Liv1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_01858"), label="HOB2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_04176"), label="HSF2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_03894"), label="PDR802",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_00332"), label="SIP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_05153"), label="GAT5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_03741"), label="FZC31",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_2h, gene =="CNAG_07411"), label="RUM1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    
+         scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70),
+                            limits = c(0,70), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        scale_x_continuous(breaks = seq(-5,5,1),
+                            limits = c(-5,5), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        labs(x = "log2-fold change",
+             y = "-log10(p.value)",
+             title = "Gat201 mutants v WT at 2h")
+volcano2hTF
+```
 
 
+
+```{ volcano_4hrs_TFr}
+volcano4hTF <- 
+  ggplot(data = tresults_4h, aes(x=estimate,y=-log10(p.value))) +
+         geom_point(colour = "grey50",size = 0.5) +
+         geom_point(data = de_Gat201up_4h, colour = Gat201up_colour) +
+         geom_point(data = de_Gat201down_4h, colour = Gat201down_colour) +
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_02774"), label="mAL13",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04841"), label="FZCV43",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_06483"), label="FZC25",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_01438"), label="SW16",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04345"), label="ARO8001",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04398"), label="ARO80",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_00239"), label="YAP1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_06762"), label="Gat204",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_06276"), label="CEP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_03561"), label="FZC33",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_00559"), label="BZP3",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_06814"), label="Sx1-7a",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_03346"), label="BZP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04807"), label="FZC8",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_05392"), label="ZAP104",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04518"), label="ZFC5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_00460"), label="Liv1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_01858"), label="HOB2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_04176"), label="HSF2",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_03894"), label="PDR802",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_00332"), label="SIP4",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_05153"), label="GAT5",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_03741"), label="FZC31",hjust = 1.1,vjust = -0.1, colour= "black")+
+    geom_text_repel(data = filter(tresults_4h, gene =="CNAG_07411"), label="RUM1",hjust = 1.1,vjust = -0.1, colour= "black")+
+    
+         scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100),
+                            limits = c(0,100), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        scale_x_continuous(breaks = seq(-5,5,1),
+                            limits = c(-5,5), 
+                            expand = c(0.01,0.01), 
+                            oob = scales::squish) +
+        labs(x = "log2-fold change",
+             y = "-log10(p.value)",
+             title = "Gat201 mutants v WT at 4h")
+volcano4hTF
+```
 
 
 
