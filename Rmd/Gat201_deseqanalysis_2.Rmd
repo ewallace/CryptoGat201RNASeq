@@ -1860,6 +1860,182 @@ volcano4hTF
 ```
 
 
+# Venn diagrams
+
+```{r}
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("gaospecial/ggVennDiagram")
+```
+
+```{r}
+install.packages("VennDiagram")
+library("ggVennDiagram")
+```
+
+```{r}
+install.packages("gplots")
+library("gplots")
+```
+
+
+```{r}
+hr0 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_0hrs.csv")
+print (hr0)
+```
+
+```{r venn_gat201ChipSeq_0hsRNASeq}
+
+ggVennDiagram(hr0,  
+              edge_lty = "dashed", edge_size = 1.2, 
+              label_alpha = 0, 
+              category.names = c("Gat201_ChipSeq","Up","Down")) +
+              scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
+              labs(title = "RNASeq at 0 Hours") +
+              theme(legend.title = element_text(color = "black"),
+                    legend.position = "bottom") 
+
+ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_0.png")
+```
+
+# Gene Annotation
+```{r prepare GeneList}
+
+GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/gene_name_product.csv")
+GeneList <- select(GeneDescription, -X1)
+head(GeneList)
+```
+
+```{r prepare res_ddsx_resy files}
+
+UP0h <- read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds4h_resSigind.csv")
+UP4h1 <- select(UP4h, -X1)
+UP4hList<- dplyr::rename(UP4h1, Gene = x)  
+head(UP4hList)
+
+```
+
+
+
+
+
+```{r Match DE genes lists to GeneList 4h}
+DE0hUPWT<- dplyr::inner_join(UP4hList,GeneList)
+head(DE4hUP)
+write.csv(DE4hUP, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/DE4hUP.csv")
+summary(DE4hUP)
+
+```
+
+
+
+```{r}
+library("venn")
+
+```
+
+
+
+```{r}
+Hr0 <- venn(hr0) 
+overlap(Hr0, slice = "all")
+```
+
+```{r min30_intersect}
+min30 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_30m.csv")
+print (min30)
+View(min30)
+
+Int30 <- intersect(min30$MGat201, min30$X30.mDown)
+Int30
+write.csv(Int30, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int30.csv")
+i.30 <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int30.csv")
+View(i.30)
+UP30m1 <- select(i.30, -X)
+UP30mList<- dplyr::rename(UP0h1, Gene = x)  
+DE30mUPWT<- dplyr::inner_join(UP0hList,GeneList)
+DE30mUPWT
+write.csv(DE30mUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE30mUPWT.csv")
+
+```
+
+
+
+```{r venn_gat201ChipSeq_30minRNASeq}
+
+
+venn30 <- ggVennDiagram( min30,  
+               edge_lty = "dashed", edge_size = 1.2, 
+               label_alpha = 0, 
+               category.names = c("Gat201_ChipSeq","Up","Down")) +
+               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
+               labs(title = "RNASeq at 30 min")+
+               theme(legend.title = element_text(color = "black"),
+                      legend.position = "bottom")
+venn30
+ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_30.png")
+
+
+```
+
+
+```{r venn_gat201ChipSeq_2hrRNASeq}
+hr2 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_2hr.csv")
+print (hr2)
+
+Int2 <- intersect(hr2$MGat201, hr2$X2HrDown)
+Int2
+write.csv(Int2, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int2.csv")
+i.2 <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int2.csv")
+View(i.2)
+UP2h1 <- select(i.2, -X)
+UP2hList<- dplyr::rename(UP2h1, Gene = x)  
+DE2hUPWT<- dplyr::inner_join(UP2hList,GeneList)
+DE2hUPWT
+write.csv(DE2hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE2hUPWT.csv")
+
+
+
+ggVennDiagram( hr2,  
+               edge_lty = "dashed", edge_size = 1.2, 
+               label_alpha = 0,
+               category.names = c("Gat201_ChipSeq","Up","Down")) +
+               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
+               labs(title = "RNASeq at 2 Hours")+
+               theme(legend.title = element_text(color = "black"),
+                      legend.position = "bottom")
+
+ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_2.png")
+```
+
+
+```{r venn_gat201ChipSeq_4hrRNASeq}
+hr4 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_4hr.csv")
+print (hr4)
+
+Int4 <- intersect(hr4$MGat201, hr4$X4HrDown)
+Int4
+write.csv(Int4, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int4.csv")
+i.4 <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int4.csv")
+View(i.4)
+UP4h1 <- select(i.4, -X)
+UP4hList<- dplyr::rename(UP4h1, Gene = x)  
+DE4hUPWT<- dplyr::inner_join(UP4hList,GeneList)
+DE4hUPWT
+write.csv(DE4hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE4hUPWT.csv")
+
+
+ggVennDiagram( hr4,  
+               edge_lty = "dashed", edge_size = 1.2, 
+               label_alpha = 0, 
+               category.names = c("Gat201_ChipSeq","Up","Down")) +
+               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
+               labs(title = "RNASeq at 4 Hours")+
+               theme(legend.title = element_text(color = "black"),
+                      legend.position = "bottom")
+
+ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_4.png")
+```
+
 
 
 
