@@ -107,8 +107,15 @@ We now have all the ingredients to prepare our data object in a form that is sui
 counts: a table with the read counts
 samplesheet: a table with information about the samples
 
-# Differential expression analysis 
-## Gat201 deletion (GAT201 = no) v WT (GAT201 = yes) 0h only
+# Differential expression analysis
+## WT= Yes; Gat201 deletion = No
+The design of this DESeq analysis is '~ GAT201'. 
+This gives the following: [1] "Intercept"        "GAT201_No_vs_Yes" 
+Which means in this analyis we are comparing the Gat 201 deletion mutants with the WT strain. 
+Therefore UP-regulated genes shown are up-regulated in the mutant strain and reciprocally Down-regulated in the WT strain. 
+The same reciprocal agreement occurs for the Down-regulated genes shown in this analysis.
+
+## Gat201 deletionv WT 0h only
 ```{r DESeq0h}
 samplesheet_0h <- dplyr::filter(samplesheet, Time == "0")
                   print(samplesheet_0h)
@@ -121,17 +128,14 @@ dds_0h <- DESeqDataSetFromMatrix(countData = counts_0h,
                                  design = ~ GAT201)%>%
         DESeq()
 ```
+
+
+
 ```{r}
 resultsNames(dds_0h)
 results_0h <- results(dds_0h, name="GAT201_No_vs_Yes")
 
 ```
-
-jpeg(file= "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/MAPlot_dds0h.jpeg")
-MAplot_dds0h <- plotMA(results_0h, ylim=c(-5,5), alpha=.05)
-      
-dev.off()
-         
 
 
 ```{r}
