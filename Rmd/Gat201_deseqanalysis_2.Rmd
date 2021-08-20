@@ -1149,6 +1149,7 @@ head(GeneList)
 
 ```{r prepare gene list 0hDOWN}
 Gat201down_genes_0h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201down_padj05_0h_genesonly.csv")
+colnames (Gat201down_genes_0h) <- c("Gene")
 head(Gat201down_genes_0h)
 
 Gat201_0hDOWN <- dplyr::inner_join(Gat201down_genes_0h, GeneList)
@@ -1161,6 +1162,7 @@ summary(Gat201_0hDOWN)
 
 ```{r prepare gene list 0hUP}
 Gat201up_genes_0h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_0h_genesonly.csv")
+colnames (Gat201up_genes_0h) <- c("Gene")
 head(Gat201up_genes_0h)
 
 Gat201_0hUP<- dplyr::inner_join(Gat201up_genes_0h, GeneList)
@@ -1173,6 +1175,7 @@ summary(Gat201_0hUP)
 
 ```{r prepare gene list 30mDOWN}
 Gat201down_genes_30m <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201down_padj05_30m_genesonly.csv")
+colnames (Gat201down_genes_30m ) <- c("Gene")
 head(Gat201down_genes_30m)
 
 Gat201_30m_DOWN<- dplyr::inner_join(Gat201down_genes_30m, GeneList)
@@ -1185,6 +1188,7 @@ summary(Gat201_30m_DOWN)
 
 ```{r prepare gene list 30mUP}
 Gat201up_genes_30m <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_30m_genesonly.csv")
+colnames (Gat201up_genes_30m) <- c("Gene")
 head(Gat201up_genes_30m)
 
 Gat201_30mUP<- dplyr::inner_join(Gat201up_genes_30m, GeneList)
@@ -1197,6 +1201,7 @@ summary(Gat201_30mUP)
 
 ```{r prepare gene list 2hDOWN}
 Gat201down_gene_2h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201down_padj05_2h_genesonly.csv")
+colnames (Gat201down_gene_2h) <- c("Gene")
 head(Gat201down_gene_2h)
 
 Gat201_2hDOWN<- dplyr::inner_join(Gat201down_gene_2h, GeneList)
@@ -1209,6 +1214,7 @@ summary(Gat201_2hDOWN)
 
 ```{r prepare gene list 2hUP}
 Gat201up_genes_2h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_2h_genesonly.csv")
+colnames (Gat201up_genes_2h) <- c("Gene")
 head(Gat201up_genes_2h)
 
 Gat201_2hUP<- dplyr::inner_join(Gat201up_genes_2h, GeneList)
@@ -1221,6 +1227,7 @@ summary(Gat201_2hUP)
 
 ```{r prepare gene list 4hDOWN}
 Gat201down_genes_4h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201down_padj05_4h_genesonly.csv")
+colnames (Gat201down_genes_4h) <- c("Gene")
 head(Gat201down_genes_4h)
 
 Gat2014h_DOWN<- dplyr::inner_join(Gat201down_genes_4h, GeneList)
@@ -1233,6 +1240,7 @@ summary(Gat2014h_DOWN)
 
 ```{r prepare gene list 4hUP}
 Gat201up_genes_4h <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Genelist/Gat201up_padj05_4h_genesonly.csv")
+colnames (Gat201up_genes_4h) <- c("Gene")
 head(Gat201up_genes_4h)
 
 Gat2014hUP<- dplyr::inner_join(Gat201up_genes_4h, GeneList)
@@ -1814,7 +1822,8 @@ volcano2hTF
 
 
 
-```{ volcano_4hrs_TFr}
+```{r volcano_4hrs_TF}
+
 volcano4hTF <- 
   ggplot(data = tresults_4h, aes(x=estimate,y=-log10(p.value))) +
          geom_point(colour = "grey50",size = 0.5) +
@@ -1865,22 +1874,41 @@ volcano4hTF
 ```{r}
 if (!require(devtools)) install.packages("devtools")
 devtools::install_github("gaospecial/ggVennDiagram")
-```
 
-```{r}
 install.packages("VennDiagram")
 library("ggVennDiagram")
-```
 
-```{r}
 install.packages("gplots")
 library("gplots")
 ```
 
+# Gene Annotation
+```{r prepare GeneList}
 
-```{r}
+GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/gene_name_product.csv")
+GeneList <- select(GeneDescription, -X1)
+head(GeneList)
+```
+
+# Intersection of Hommer et al 2016 Gat201 Chip Seq with Gat20-1 RNA Seq
+
+```{r hr0_intersect}
 hr0 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_0hrs.csv")
 print (hr0)
+
+
+Int0 <- intersect(hr0$MGat201, hr0$X0HDown)
+Int0
+write.csv(Int0, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int0.csv")
+i.0 <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int0.csv")
+View(i.0)
+UP0h1 <- select(i.0, -X)
+UP0hList<- dplyr::rename(UP0h1, Gene = x)  
+DE0hUPWT<- dplyr::inner_join(UP0hList,GeneList)
+DE0hUPWT
+write.csv(DE0hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE0hUPWT.csv")
+
+```
 ```
 
 ```{r venn_gat201ChipSeq_0hsRNASeq}
@@ -1897,13 +1925,6 @@ ggVennDiagram(hr0,
 ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_0.png")
 ```
 
-# Gene Annotation
-```{r prepare GeneList}
-
-GeneDescription <- readr::read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/gene_name_product.csv")
-GeneList <- select(GeneDescription, -X1)
-head(GeneList)
-```
 
 ```{r prepare res_ddsx_resy files}
 
@@ -1928,17 +1949,6 @@ summary(DE4hUP)
 
 
 
-```{r}
-library("venn")
-
-```
-
-
-
-```{r}
-Hr0 <- venn(hr0) 
-overlap(Hr0, slice = "all")
-```
 
 ```{r min30_intersect}
 min30 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_30m.csv")
