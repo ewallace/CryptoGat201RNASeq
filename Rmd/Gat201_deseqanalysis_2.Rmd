@@ -1890,12 +1890,13 @@ GeneList <- select(GeneDescription, -X1)
 head(GeneList)
 ```
 
-# Intersection of Hommer et al 2016 Gat201 Chip Seq with Gat20-1 RNA Seq
+# Intersection of Hommer et al 2016 Gat201 Chip Seq with Gat201 RNA Seq
 
 ```{r hr0_intersect}
 hr0 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_0hrs.csv")
 print (hr0)
 
+# Up-regulated genes in Wt at 0 hrs
 
 Int0 <- intersect(hr0$MGat201, hr0$X0HDown)
 Int0
@@ -1908,10 +1909,24 @@ DE0hUPWT<- dplyr::inner_join(UP0hList,GeneList)
 DE0hUPWT
 write.csv(DE0hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE0hUPWT.csv")
 
-```
+
+# Down-regulated genes in Wt at 0 hrs
+
+Int0b <- intersect(hr0$MGat201, hr0$X0HUp)
+Int0b
+write.csv(Int0b, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int0b.csv")
+i.0b <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int0b.csv")
+View(i.0b)
+DOWN0h1 <- select(i.0b, -X)
+DOWN0hList<- dplyr::rename(DOWN0h1, Gene = x)  
+DE0hDOWNWT<- dplyr::inner_join(DOWN0hList,GeneList)
+DE0hDOWNWT
+write.csv(DE0hDOWNWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE0hDOWNWT.csv")
+
 ```
 
-```{r venn_gat201ChipSeq_0hsRNASeq}
+
+```{r venn_hr0_intersect}
 
 ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
@@ -1926,34 +1941,14 @@ ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_Chip
 ```
 
 
-```{r prepare res_ddsx_resy files}
-
-UP0h <- read_csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/res_dds4h_resSigind.csv")
-UP4h1 <- select(UP4h, -X1)
-UP4hList<- dplyr::rename(UP4h1, Gene = x)  
-head(UP4hList)
-
-```
-
-
-
-
-
-```{r Match DE genes lists to GeneList 4h}
-DE0hUPWT<- dplyr::inner_join(UP4hList,GeneList)
-head(DE4hUP)
-write.csv(DE4hUP, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq/DE4hUP.csv")
-summary(DE4hUP)
-
-```
-
-
 
 
 ```{r min30_intersect}
 min30 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_30m.csv")
 print (min30)
 View(min30)
+
+# Up-regulated genes in Wt at 30 mins
 
 Int30 <- intersect(min30$MGat201, min30$X30.mDown)
 Int30
@@ -1966,11 +1961,24 @@ DE30mUPWT<- dplyr::inner_join(UP0hList,GeneList)
 DE30mUPWT
 write.csv(DE30mUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE30mUPWT.csv")
 
+# Down-regulated genes in Wt at 30 mins
+
+Int30b <- intersect(min30$MGat201, min30$X30mUp)
+Int30b
+write.csv(Int30b, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int30b.csv")
+i.30b <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int30b.csv")
+View(i.30b)
+DOWN30m1 <- select(i.30b, -X)
+DOWN30mList<- dplyr::rename(DOWN30m1, Gene = x)  
+DE30mDOWNWT<- dplyr::inner_join(DOWN30mList,GeneList)
+DE30mDOWNWT
+write.csv(DE30mDOWNWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE30mDOWNWT.csv")
+
 ```
 
 
 
-```{r venn_gat201ChipSeq_30minRNASeq}
+```{r venn_min30_intersect}
 
 
 venn30 <- ggVennDiagram( min30,  
@@ -1988,9 +1996,11 @@ ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_Chip
 ```
 
 
-```{r venn_gat201ChipSeq_2hrRNASeq}
+```{r 2h_intersect}
 hr2 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_2hr.csv")
 print (hr2)
+
+# Up-regulated genes in Wt at 2 hrs
 
 Int2 <- intersect(hr2$MGat201, hr2$X2HrDown)
 Int2
@@ -2003,8 +2013,24 @@ DE2hUPWT<- dplyr::inner_join(UP2hList,GeneList)
 DE2hUPWT
 write.csv(DE2hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE2hUPWT.csv")
 
+# Down-regulated genes in Wt at 2 hrs
+
+Int2b <- intersect(hr0$MGat201, hr0$X0HUp)
+Int2b
+write.csv(Int2b, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int2b.csv")
+i.2b <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int2b.csv")
+View(i.2b)
+DOWN2h1 <- select(i.2b, -X)
+DOWN2hList<- dplyr::rename(DOWN2h1, Gene = x)  
+DE2hDOWNWT<- dplyr::inner_join(DOWN2hList,GeneList)
+DE2hDOWNWT
+write.csv(DE2hDOWNWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE2hDOWNWT.csv")
 
 
+```
+
+
+```{r venn_2h_intersect}
 ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
@@ -2018,9 +2044,12 @@ ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_Chip
 ```
 
 
-```{r venn_gat201ChipSeq_4hrRNASeq}
+```{r 4h_intersect}
+
 hr4 <- read.csv("~/Documents/Edward Wallace/Lab based work/RNA Seq/Madhani_Chip-seq/Gat201_4hr.csv")
 print (hr4)
+
+# Up-regulated genes in Wt at 4 hrs
 
 Int4 <- intersect(hr4$MGat201, hr4$X4HrDown)
 Int4
@@ -2033,6 +2062,23 @@ DE4hUPWT<- dplyr::inner_join(UP4hList,GeneList)
 DE4hUPWT
 write.csv(DE4hUPWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE4hUPWT.csv")
 
+# Down-regulated genes in Wt at 4 hrs
+
+Int4b <- intersect(hr0$MGat201, hr0$X0HUp)
+Int4b
+write.csv(Int4b, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int4b.csv")
+i.4b <- read.csv("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/Int4b.csv")
+View(i.4b)
+DOWN4h1 <- select(i.4b, -X)
+DOWN4hList<- dplyr::rename(DOWN4h1, Gene = x)  
+DE4hDOWNWT<- dplyr::inner_join(DOWN4hList,GeneList)
+DE4hDOWNWT
+write.csv(DE4hDOWNWT, file = "~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/DE4hDOWNWT.csv")
+
+
+```
+
+```{rvenn_4h_intersect }
 
 ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
@@ -2045,7 +2091,6 @@ ggVennDiagram( hr4,
 
 ggsave ("~/Documents/GitHub/CryptoGat201RNASeq_draft/results_deseq_2/RNASeq_ChipSeq_4.png")
 ```
-
 
 
 
