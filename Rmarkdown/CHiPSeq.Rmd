@@ -294,9 +294,9 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
-              category.names = c("Gat201_ChipSeq","0h-Up","0h-Down")) +
+              category.names = c("Gat201_ChipSeq","0h-Down","0h-Up")) +
               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-              labs(title = "CHipSeq-Gat201_RNASeq at 0 Hours") +
+              labs(title = "CHipSeq-Gat201_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
 
@@ -343,9 +343,9 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 venn30 <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Gat201_ChipSeq","30m-Up","30m-Down")) +
+               category.names = c("Gat201_ChipSeq","30m-Down","30m-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-               labs(title = "CHipSeq-Gat201_RNASeq at 30 min")+
+               labs(title = "CHipSeq-Gat201_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 venn30
@@ -393,9 +393,9 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
-               category.names = c("Gat201_ChipSeq","2h-Up","2h-Down")) +
+               category.names = c("Gat201_ChipSeq","2h-Down","2h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Gat201_RNASeq at 2 Hours")+
+               labs(title = "CHipSeq-Gat201_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
@@ -426,8 +426,14 @@ write.csv(DE4hUPWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/DE
 Int4b <- intersect(hr4$MGat201, hr4$X4HrUp)
 Int4b
 write.csv(Int4b, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/Int4b.csv")
+i.4b <- read.csv("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/Int4b.csv")
+View(i.4b)
+DOWN4h1 <- select(i.4b, -X)
+DOWN4hList<- dplyr::rename(DOWN4h1, Gene = x)  
+DE4hDOWNWT<- dplyr::inner_join(DOWN4hList,GeneList)
+DE4hDOWNWT
+write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/DE4hDOWNWT_Gat201.csv")
 
-#Int4b.csv is empty
 
 ```
 
@@ -437,9 +443,9 @@ write.csv(Int4b, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/Int4b
 ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Gat201_ChipSeq","4h-Up","4h-Down")) +
+               category.names = c("Gat201_ChipSeq","4h-Down","4h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Gat201_RNASeq at 4 Hours")+
+               labs(title = "CHipSeq-Gat201_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
@@ -490,9 +496,9 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
-              category.names = c("Gat204_ChipSeq","0h-Up","0h-Down")) +
+              category.names = c("Gat204_ChipSeq","0h-Down","0h-Up")) +
               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-              labs(title = "CHipSeq-Gat204_RNASeq at 0 Hours") +
+              labs(title = "CHipSeq-Gat204_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
 
@@ -539,9 +545,9 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 venn30 <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Gat204_ChipSeq","30m-Up","30m-Down")) +
+               category.names = c("Gat204_ChipSeq","30m-Down","30m-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-               labs(title = "CHipSeq-Gat204_RNASeq at 30 min")+
+               labs(title = "CHipSeq-Gat204_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 venn30
@@ -589,9 +595,9 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
-               category.names = c("Gat204_ChipSeq","2h-Up","2h-Down")) +
+               category.names = c("Gat204_ChipSeq","2h-Down","2h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Gat204_RNASeq at 2 Hours")+
+               labs(title = "CHipSeq-Gat204_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
@@ -638,9 +644,9 @@ write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Gat204_ChipSeq","4h-Up","4h-Down")) +
+               category.names = c("Gat204_ChipSeq","4h-Down","4h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Gat204_RNASeq at 4 Hours")+
+               labs(title = "CHipSeq-Gat204_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
@@ -690,9 +696,9 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
-              category.names = c("Liv3_ChipSeq","0h-Up","0h-Down")) +
+              category.names = c("Liv3_ChipSeq","0h-Down","0h-Up")) +
               scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-              labs(title = "CHipSeq-Liv3_RNASeq at 0 Hours") +
+              labs(title = "CHipSeq-Liv3_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
 
@@ -739,9 +745,9 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 venn30 <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Liv3_ChipSeq","30m-Up","30m-Down")) +
+               category.names = c("Liv3_ChipSeq","30m-Down","30m-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") +
-               labs(title = "CHipSeq-Liv3_RNASeq at 30 min")+
+               labs(title = "CHipSeq-Liv3_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 venn30
@@ -789,9 +795,9 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
-               category.names = c("Liv3_ChipSeq","2h-Up","2h-Down")) +
+               category.names = c("Liv3_ChipSeq","2h-Down","2h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Liv3_RNASeq at 2 Hours")+
+               labs(title = "CHipSeq-Liv3_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
@@ -837,9 +843,9 @@ write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
-               category.names = c("Liv3_ChipSeq","4h-Up","4h-Down")) +
+               category.names = c("Liv3_ChipSeq","4h-Down","4h-Up")) +
                scale_fill_gradient(low= "#F4FAFE",high = "#4981BF") + 
-               labs(title = "CHipSeq-Liv3_RNASeq at 4 Hours")+
+               labs(title = "CHipSeq-Liv3_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
 
