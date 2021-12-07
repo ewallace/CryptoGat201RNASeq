@@ -11,6 +11,7 @@ Analysis started by Edward Wallace, February 2021
 * input_experiment - other input files including sample sheet
 * results - output data and results
 * results_counts - Results consisting of count data and analyses of those.
+* results_deseq - Results of DESeq2 analysis on count data.
 
 ## How we made the subsampled data
 
