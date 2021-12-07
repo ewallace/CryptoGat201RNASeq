@@ -291,7 +291,7 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_hr0_intersect_Gat201}
 
-ggVennDiagram(hr0,  
+venn_Gat201_0h <- ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
               category.names = c("Gat201_ChipSeq","0h-Down","0h-Up")) +
@@ -299,6 +299,7 @@ ggVennDiagram(hr0,
               labs(title = "CHipSeq-Gat201_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
+venn_Gat201_0h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat201_0h.png")
 ```
@@ -340,7 +341,7 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 
 ```{r venn_min30_intersect_Gat201}
 
-venn30 <- ggVennDiagram( min30,  
+venn_Gat201_30m <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Gat201_ChipSeq","30m-Down","30m-Up")) +
@@ -348,7 +349,8 @@ venn30 <- ggVennDiagram( min30,
                labs(title = "CHipSeq-Gat201_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
-venn30
+venn_Gat201_30m
+
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat201_30m.png")
 
 ```
@@ -390,7 +392,7 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_2h_intersect_Gat201}
 
-ggVennDiagram( hr2,  
+venn_Gat201_2h <-ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
                category.names = c("Gat201_ChipSeq","2h-Down","2h-Up")) +
@@ -398,6 +400,7 @@ ggVennDiagram( hr2,
                labs(title = "CHipSeq-Gat201_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Gat201_2h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat201_2h.png")
 ```
@@ -440,7 +443,7 @@ write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_4h_intersect_Gat201 }
 
-ggVennDiagram( hr4,  
+venn_Gat201_4h <- ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Gat201_ChipSeq","4h-Down","4h-Up")) +
@@ -448,6 +451,7 @@ ggVennDiagram( hr4,
                labs(title = "CHipSeq-Gat201_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Gat201_4h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat201_4h.png")
 ```
@@ -493,7 +497,7 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_hr0_intersect_Gat204}
 
-ggVennDiagram(hr0,  
+venn_Gat204_0h <- ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
               category.names = c("Gat204_ChipSeq","0h-Down","0h-Up")) +
@@ -501,6 +505,7 @@ ggVennDiagram(hr0,
               labs(title = "CHipSeq-Gat204_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
+venn_Gat204_0h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat204_0h.png")
 ```
@@ -542,7 +547,7 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 
 ```{r venn_min30_intersect_Gat204}
 
-venn30 <- ggVennDiagram( min30,  
+venn_Gat204_30m <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Gat204_ChipSeq","30m-Down","30m-Up")) +
@@ -550,7 +555,8 @@ venn30 <- ggVennDiagram( min30,
                labs(title = "CHipSeq-Gat204_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
-venn30
+venn_Gat204_30m
+
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat204_30m.png")
 
 ```
@@ -592,7 +598,7 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_2h_intersect_Gat204}
 
-ggVennDiagram( hr2,  
+venn_Gat204_2h <- ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
                category.names = c("Gat204_ChipSeq","2h-Down","2h-Up")) +
@@ -600,6 +606,7 @@ ggVennDiagram( hr2,
                labs(title = "CHipSeq-Gat204_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Gat204_2h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat204_2h.png")
 ```
@@ -641,7 +648,7 @@ write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_4h_intersect_Gat204 }
 
-ggVennDiagram( hr4,  
+venn_Gat204_4h <- ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Gat204_ChipSeq","4h-Down","4h-Up")) +
@@ -649,6 +656,7 @@ ggVennDiagram( hr4,
                labs(title = "CHipSeq-Gat204_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Gat204_4h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Gat204_4h.png")
 ```
@@ -693,7 +701,7 @@ write.csv(DE0hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_hr0_intersect_Liv3}
 
-ggVennDiagram(hr0,  
+venn_Liv3_0h <- ggVennDiagram(hr0,  
               edge_lty = "dashed", edge_size = 1.2, 
               label_alpha = 0, 
               category.names = c("Liv3_ChipSeq","0h-Down","0h-Up")) +
@@ -701,6 +709,7 @@ ggVennDiagram(hr0,
               labs(title = "CHipSeq-Liv3_RNASeq at 0 Hours: In WT") +
               theme(legend.title = element_text(color = "black"),
                     legend.position = "bottom") 
+venn_Liv3_0h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Liv3_0h.png")
 ```
@@ -742,7 +751,7 @@ write.csv(DE30mDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq
 
 ```{r venn_min30_intersect_Liv3}
 
-venn30 <- ggVennDiagram( min30,  
+venn_Liv3_30m <- ggVennDiagram( min30,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Liv3_ChipSeq","30m-Down","30m-Up")) +
@@ -750,7 +759,7 @@ venn30 <- ggVennDiagram( min30,
                labs(title = "CHipSeq-Liv3_RNASeq at 30 min: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
-venn30
+venn_Liv3_30m
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Liv3_30m.png")
 
 ```
@@ -792,7 +801,7 @@ write.csv(DE2hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_2h_intersect_Liv3}
 
-ggVennDiagram( hr2,  
+venn_Liv3_2h <- ggVennDiagram( hr2,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0,
                category.names = c("Liv3_ChipSeq","2h-Down","2h-Up")) +
@@ -800,6 +809,7 @@ ggVennDiagram( hr2,
                labs(title = "CHipSeq-Liv3_RNASeq at 2 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Liv3_2h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Liv3_2h.png")
 ```
@@ -840,7 +850,7 @@ write.csv(DE4hDOWNWT, file = "~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/
 
 ```{r venn_4h_intersect_Liv3 }
 
-ggVennDiagram( hr4,  
+venn_Liv3_4h <- ggVennDiagram( hr4,  
                edge_lty = "dashed", edge_size = 1.2, 
                label_alpha = 0, 
                category.names = c("Liv3_ChipSeq","4h-Down","4h-Up")) +
@@ -848,6 +858,7 @@ ggVennDiagram( hr4,
                labs(title = "CHipSeq-Liv3_RNASeq at 4 Hours: In WT")+
                theme(legend.title = element_text(color = "black"),
                       legend.position = "bottom")
+venn_Liv3_4h
 
 ggsave ("~/GitHub/CryptoGat201RNASeq_draft_b/results_deseq/RNASeq_ChipSeq_Liv3_4h.png")
 ```
