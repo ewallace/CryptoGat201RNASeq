@@ -60,7 +60,7 @@ counts <- readr::read_tsv("~/GitHub/CryptoGat201RNASeq_draft_b/quantseqfwd_EH_05
 ```{r Load sample sheet}
 samplesheet <- readxl::read_excel("~/GitHub/CryptoGat201RNASeq_draft_b/input_experiment/Gat201_samplesheet.xlsx") %>%
     magrittr::set_rownames(.$SampleID)%>%
-    dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, Yes = c("a","A"), No = c("B","M")))
+    dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, WT = c("a","A"), Gat201 = c("B","M")))
 
 ```
 
@@ -80,7 +80,7 @@ counts_all <-
 
 (dds_all <- DESeqDataSetFromMatrix(countData = counts_all,
                                   colData = samplesheet,
-                                  design = ~ Condition + Strain + Time))
+                                  design = ~ Condition  + Time + GAT201))
 
 ```
 
@@ -94,7 +94,33 @@ rld_all <- rlog(dds_all)
 ```
 
 
-# PCA Plot for 0 Hours, 30 Mins, 2 Hours and 4 Hours using rlog transformation
+# PCA Plot for All, 0 Hours, 30 Mins, 2 Hours and 4 Hours using rlog transformation
+
+##Plot PCA for All
+
+
+```{r PCA_Plot_rld_All}
+
+plotPCA(rld_All, intgroup = c("Strain", "Condition", "Time"))
+
+plotPCA(rld_All, intgroup = c("GAT201", "Condition", "Time"))
+
+plotPCA(rld_All, intgroup = c("GAT201", "Condition"))
+
+plotPCA(rld_All, intgroup = c("GAT201", "Time"))
+
+plotPCA(rld_All, intgroup = c("Time", "Condition"))
+
+plotPCA(rld_All, intgroup = c("Strain"))
+
+plotPCA(rld_All, intgroup = c("GAT201"))
+
+plotPCA(rld_All, intgroup = c("Condition"))
+
+plotPCA(rld_All, intgroup = c("Time"))
+       
+```
+
 
 ## Plot PCA for 0h
 
