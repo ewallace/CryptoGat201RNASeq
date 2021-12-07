@@ -140,7 +140,7 @@ plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FA
 ## Print PCA_12 Time and then Condition
 
 ```{r Plot_PC12}
-(plotPCA(rld_all, intgroup = c("GAT201", "Time")))
+print(plotPCA(rld_all, intgroup = c("GAT201", "Time")))
 print(plotPCA(rld_all, intgroup = c("GAT201", "Condition")))
 
 
@@ -176,7 +176,7 @@ plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FA
     }
     ggplot(data = d, aes_string(x = "PC2", y = "PC3", color = "group")) + 
         geom_point(size = 3) + xlab(paste0("PC2: ", round(percentVar[3] * 
-        100), "% variance")) + ylab(paste0("PC2: ", round(percentVar[3] * 
+        100), "% variance")) + ylab(paste0("PC3: ", round(percentVar[3] * 
         100), "% variance")) + coord_fixed()
     
   }
