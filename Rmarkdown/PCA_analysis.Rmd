@@ -1,4 +1,10 @@
 ---
+title: "PCA Analysis"
+author: "Liz Hughes"
+date: "09/12/2021"
+output: html_document
+---
+---
 title: "PCA_Plot"
 author: "Liz Hughes"
 date: "09/12/2021"
@@ -142,3 +148,4 @@ plotPCA(rld_all, intgroup = c("GAT201", "Time"))
 
 
 ```
+
