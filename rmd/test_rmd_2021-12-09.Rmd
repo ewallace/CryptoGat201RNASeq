@@ -1,0 +1,64 @@
+---
+title: "Test Rmd for baby pull request"
+author: "Liz Hughes"
+date: "09/12/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Load packages used for analysis
+```{r Load packages used for analysis, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+# Load count data and remove unwanted parts of column names
+
+```{r Load count data}
+
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+
+```
+
+```{r print_count_data}
+counts
+```
+
