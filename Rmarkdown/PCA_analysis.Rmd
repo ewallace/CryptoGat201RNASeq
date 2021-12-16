@@ -1,13 +1,7 @@
 ---
-title: "PCA Analysis"
-author: "Liz Hughes"
-date: "09/12/2021"
-output: html_document
----
----
-title: "PCA_Plot"
-author: "Liz Hughes"
-date: "09/12/2021"
+title: "PCA analysis of Gat201 RNA-seq dataset"
+author: "Liz Hughes and Edward Wallace"
+date: "16/12/2021"
 output:
   html_document:
     toc: yes
@@ -19,12 +13,20 @@ output:
     toc: yes
     toc_depth: '2'
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 ```
 
+# Summary
+
+This document is a big-picture analysis of trends in the Gat201 RNA-seq dataset.
+
+The first goal is a principal component analysis (PCA) to show the main axes of variation in the data.
+
 # Load packages used for analysis
-```{r Load packages used for analysis, include=FALSE}
+
+```{r load_packages, include=FALSE}
 
 library(tidyr)
 library(readr)
@@ -54,9 +56,9 @@ theme_set(
 
 # Load count data and remove unwanted parts of column names
 
-```{r Load count data}
+```{r load_count_data}
 
-counts <- readr::read_tsv("~/GitHub/CryptoGat201RNASeq_draft_b/quantseqfwd_EH_050221/counts.txt",
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
                    comment = "#") %>% 
           dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
 
@@ -65,9 +67,9 @@ counts <- readr::read_tsv("~/GitHub/CryptoGat201RNASeq_draft_b/quantseqfwd_EH_05
 
 # Load sample sheet and format for DESeq2's requirements: readxl::read_excel
 
-```{r Load sample sheet}
+```{r load_sample_sheet}
 
-samplesheet <- readxl::read_excel("~/GitHub/CryptoGat201RNASeq_draft_b/input_experiment/Gat201_samplesheet.xlsx") %>%
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
     magrittr::set_rownames(.$SampleID)%>%
     dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, WT = c("a","A"), Gat201 = c("B","M")))
 
@@ -75,7 +77,7 @@ samplesheet <- readxl::read_excel("~/GitHub/CryptoGat201RNASeq_draft_b/input_exp
 
 # Select counts
 
-```{r Select_counts_all}
+```{r select_counts_all}
 
 counts_all <-
       dplyr::select(counts, samplesheet$SampleID) %>%
@@ -142,7 +144,7 @@ plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FA
 
 # PCA_1-2
 
-```{r Plot_PC12}
+```{r plot_PC12}
 
 plotPCA(rld_all, intgroup = c("GAT201", "Time"))
 
