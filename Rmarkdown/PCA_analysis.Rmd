@@ -57,7 +57,8 @@ theme_set(
 # Load count data and remove unwanted parts of column names
 
 ```{r load_count_data}
-
+# note: we should insist that counts are loaded as integers
+# and check the other data types
 counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
                    comment = "#") %>% 
           dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
@@ -70,8 +71,13 @@ counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
 ```{r load_sample_sheet}
 
 samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
-    magrittr::set_rownames(.$SampleID)%>%
-    dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, WT = c("a","A"), Gat201 = c("B","M")))
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "∆" = c("B","M")) %>% 
+                    forcats::fct_relevel("∆")
+                  ) 
 
 ```
 
@@ -89,9 +95,9 @@ counts_all <-
 
 ```{r dds_counts_all}
 
-(dds_all <- DESeqDataSetFromMatrix(countData = counts_all,
+dds_all <- DESeqDataSetFromMatrix(countData = counts_all,
                                    colData = samplesheet,
-                                   design = ~ Condition  + Time + GAT201))
+                                   design = ~ Condition  + Time + GAT201)
 
 ```
 
@@ -101,7 +107,8 @@ counts_all <-
 ```{r rlog_dds_all}
 
 rld_all <- rlog(dds_all)
-           head(assay(rld_all))
+head(assay(rld_all))
+
 ```
 
 
@@ -141,6 +148,8 @@ plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FA
   }
 
 ```
+
+
 
 # PCA_1-2
 
