@@ -114,7 +114,7 @@ head(assay(rld_all))
 
 # PCA Plot function for PC1 and PC2
 
-```{r function_12}
+```{r function_12, eval = FALSE}
 
 plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FALSE) 
 {
@@ -149,14 +149,90 @@ plotPCA <- function (object, intgroup = "condition", ntop = 500, returnData = FA
 
 ```
 
+## Calculate principal components of rlog
 
+```{r calculate_pca_rlog}
 
-# PCA_1-2
+## calculate the principal components sample-wise
+pca_rlog <- prcomp(t(assay(rld_all)))
 
-```{r plot_PC12}
-
-plotPCA(rld_all, intgroup = c("GAT201", "Time"))
-
+# combine pc projections to samples with sample sheet
+pcdf_rlog <- bind_cols(
+  as_tibble(colData(rld_all)) %>%
+    mutate(GAT201_Cond = interaction(GAT201, Condition, sep = "_"),
+           GAT201_Serum = forcats::fct_collapse(
+             GAT201_Cond,
+             "∆_none"   = c("∆_R", "∆_Y"),
+             "WT_none"   = c("WT_R", "WT_Y"),
+             "∆_Serum" = "∆_RS",
+             "WT_Serum"  = "WT_RS"
+           ),
+    ),
+  as_tibble(pca_rlog$x)
+)
 
 ```
 
+
+
+# Plot PC1 vs PC2 with default values
+
+```{r plot_PC12_default}
+ggplot(data = pcdf_rlog,
+       aes(colour = factor(Time), 
+           shape = GAT201_Cond)
+       ) +
+  geom_point(aes(x = PC1, y = PC2)) 
+```
+
+# Plot PC1 vs PC2 prioritising Time and GAT201_serum
+
+```{r plot_PC12_fancy}
+plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
+                             data = pcdf_rlog) {
+  # Plots PCA with default settings to highlight:
+  #  Time as colour
+  #  GAT201_Serum as shape, i.e. interaction of GAT201 and serum 
+  #    (treating R and Y both as "no serum")
+  # 
+  # Default data input is pcdf_rlog, but it should work with others
+  # as long as they have Time and GAT201_Serum as variables.
+  
+  ggplot(data = data,
+         aes(colour = factor(Time), 
+             shape = GAT201_Serum)
+  ) +
+    geom_vline(xintercept = 0) +
+    geom_hline(yintercept = 0) +
+    geom_point(aes_string(x = xpc, y = ypc)) +
+    scale_shape_manual("Gat201, Serum",
+                       values = c("∆_none"   = 0,
+                                  "WT_none"   = 15,
+                                  "∆_Serum" = 2,
+                                  "WT_Serum"  = 17),
+                       labels = c("∆_none"   = "∆,  none",
+                                  "WT_none"   = "WT, none",
+                                  "∆_Serum" = "∆,  + serum",
+                                  "WT_Serum"  = "WT, + serum")
+    ) +
+    scale_colour_manual("Time (mins.)",
+                        values = c("0" = "grey20",
+                                   "30" = "darkblue",
+                                   "120" = "purple2",
+                                   "240" = "darkred")) +
+    theme(axis.line = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.border = element_rect(colour= "grey50", size = 0.5))
+  
+}
+plot_PCA_Time_GC()
+```
+
+
+## To do
+
+- separate the PCA calculation from the plotting
+- make sure we give all PCs column names PC1, PC2, etc.
+- make nice aligned plots of first few PCs
+- make PCA loading plot 
+- try again with vst and see if it's different in any important way
