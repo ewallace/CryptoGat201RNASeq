@@ -1,0 +1,174 @@
+---
+title: "Serum-dependent DEGs in Gat201 RNA-seq dataset"
+author: "Edward Wallace"
+date: "18/12/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Summary
+
+This document is to analyse the genes differentially expressed downstream of serum.
+
+One section does DE analysis dependent on serum at 4h.
+
+A later section makes an unsuccessful start at putting together the data for a clustered heat-map plot.
+
+# Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(genefilter)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+# Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+```
+
+
+# Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+```{r load_sample_sheet}
+
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "∆" = c("B","M")) %>% 
+                    forcats::fct_relevel("∆"),
+                  GMT = paste(GAT201,Media,Timepoint, sep = "_")
+                  ) 
+
+```
+
+# Select counts
+
+```{r select_counts_all}
+
+counts_all <-
+      dplyr::select(counts, samplesheet$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid)
+
+```
+
+# DESeq analysis at 4h with respect to serum only
+
+Only 1 gene is more than 2x differentially expressed; only 5 are more than 1.4x differentially expressed (i.e. log2FC = 0.5).
+
+This is using the Wald test as specified when we set `lfcThreshold = 0.5` (see documentation for `DESeq2::results`. The likelihood ratio test is more generous with p-values.
+
+We need to figure out what's better; I suspect LRT.
+
+```{r dds_serum_4h}
+
+samplesheet_4h <- 
+  filter(samplesheet, Time == 240) %>%
+  mutate(Serum = (Condition == "RS"))
+  
+dds_serum_4h <- 
+  DESeqDataSetFromMatrix(countData = counts_all[samplesheet_4h$SampleID],
+                         colData = samplesheet_4h,
+                         design = ~ Serum) %>%
+  DESeq()
+
+results_serum_4h <-
+  results(dds_serum_4h, lfcThreshold = 0.5, alpha = 0.1)
+
+summary(results_serum_4h)
+```
+
+Check the gene names next.
+
+```{r}
+# Join to gene names - I don't know why this didn't happen automatically
+tresults_serum_4h <- bind_cols(
+  tibble(Gene = rownames(counts_all)),
+  biobroom::tidy.DESeqResults(results_serum_4h)
+)
+
+tresults_serum_4h %>%
+  filter(p.adjusted < 0.1, estimate < -0.5) %>%
+  arrange(desc(baseMean))
+  
+```
+
+- CNAG_00895, ZIP1 zinc transporter 
+- CNAG_03398, ZIP2 zinc transporter
+- CNAG_03007, hypothetical protein
+- CNAG_02005, hypothetical protein
+- CNAG_03453, CipC-like antibiotic response protein
+
+This list is interesting. ZIP2 is behaving really differently at 2h, ZIP1 more at 4h, both less highly expressed with serum. This suggests possibility of zinc starvation in these growth conditions.
+
+CipC is a virulence factor in some filamentous pathogens.
+
+
+# DESeq analysis with respect to GMT (Gat201, Media, Time)
+
+```{r dds_counts_all}
+
+dds_gmt <- DESeqDataSetFromMatrix(countData = counts_all,
+                                   colData = samplesheet,
+                                   design = ~ GMT) %>%
+  DESeq()
+
+
+```
+
+```{r results_dds_gmt}
+results(dds_gmt)
+```
+
+
+This did not work as expected. It's all calculated DE against `del RPMI 120`, and it's not processing the "∆" properly.
+
+# To do next
+
+- replace ∆ by del in strain name t clear up those problems.
+- set a better reference condition or average to compare against; try the `contrast` argument.
+- Check Wald test vs LRT for DESeq, does it matter?
+- Maybe, check if we get better stats from analysing strains separately???
+- Explain the whole damn thing better.
