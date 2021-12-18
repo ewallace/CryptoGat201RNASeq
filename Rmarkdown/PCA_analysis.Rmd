@@ -144,8 +144,9 @@ propvar_rlog_df <- tibble(
 # Plot PCA percentage variance explained to find how many PCs to pay attention to.
 
 ```{r plot_percentvar, fig.width = 3, fig.height = 2}
-ggplot(data = propvar_rlog_df, 
-       aes(x = PC, y = prop_var)) +
+plot_percentvar_rlog <- 
+  ggplot(data = propvar_rlog_df, 
+         aes(x = PC, y = prop_var)) +
   geom_col(fill = "blue") +
   scale_x_continuous("principal component",
                      limits = c(0.4,10.6), 
@@ -154,6 +155,8 @@ ggplot(data = propvar_rlog_df,
                      expand = c(0,0)) + 
   scale_y_continuous("prop. of variance", expand = c(0,0)) +
   theme(panel.grid.major = element_blank())
+
+plot_percentvar_rlog
 ```
 
 
@@ -208,11 +211,55 @@ plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
           panel.border = element_rect(colour= "grey50", size = 0.5))
   
 }
-plot_PCA_Time_GC()
+
+plot_PCA_Time_GC("PC1", "PC2")
+```
+This plot shows that PC1 and PC2 are almost completely reporting on Time. Because PC1/2 collectively explain 80% of the variance, that establishes that Time is the biggest driver of variability.
+
+
+## Make aligned plot of first 4 PCs
+
+This is a draft of a multi-panel plot that could be included in the paper. 
+
+```{r plot_PC1to4,fig.width = 7, fig.height = 7}
+# Create plot panels but without legends
+PC1vs2 <- plot_PCA_Time_GC("PC1", "PC2") + theme(legend.position = "none")
+PC1vs3 <- plot_PCA_Time_GC("PC1", "PC3") + theme(legend.position = "none")
+PC1vs4 <- plot_PCA_Time_GC("PC1", "PC4") + theme(legend.position = "none")
+PC2vs3 <- plot_PCA_Time_GC("PC2", "PC3") + theme(legend.position = "none")
+PC2vs4 <- plot_PCA_Time_GC("PC2", "PC4") + theme(legend.position = "none")
+PC3vs4 <- plot_PCA_Time_GC("PC3", "PC4") + theme(legend.position = "none")
+
+# get the legend
+PC_legend_Time_GC <- get_legend( 
+  plot_PCA_Time_GC() + 
+    theme(legend.box.margin = margin(0, 0, 0, 12))
+  )
+
+# plot those aligned in a grid
+
+plot_grid(PC1vs2, PC_legend_Time_GC,   plot_percentvar_rlog,
+          PC1vs3, PC2vs3, NULL, 
+          PC1vs4, PC2vs4, PC3vs4, 
+  align = "hv")
+```
+
+This plot shows that PC3 reports on Gat201 status,  vs WT. 
+
+It is unclear what PC4 means.
+
+## PC5 somewhat reports on serum at the later time points
+
+I found the clearest report in PC2 vs PC5, because PC2 lays out the times in the expected order.
+
+Do we need to include this plot panel?
+
+```{r plot_PC25_fancy}
+plot_PCA_Time_GC("PC2", "PC5")
 ```
 
 
 ## To do
 
-- make nice aligned plots of first few PCs
+- decide which plots to include in 
 - try again with vst and see if it's different in any important way
