@@ -176,9 +176,11 @@ plotheat_log2FC(genes = c("CNAG_05392", "CNAG_06246", "CNAG_03438"))
 
 ### Select genes that are DE dependent on GAT201 at any timepoint
 
-Here we also plot in order of log2FC at R_240.
+We use a cutoff of 2x difference, adjusted p-value 0.05.
 
-```{r select_DEGAT201}
+Here we also plot in order of log2FC averaged R_240 with RS_240.
+
+```{r select_DEGAT201_anytime}
 DEGAT201_up_anytime <- 
   deseq_df_CT_vsGAT201 %>%
   dplyr::filter(log2FC > 1, padj < 0.05) 
@@ -191,9 +193,12 @@ DEGAT201_list_anytime <- c(unique(DEGAT201_up_anytime$gene),
                            unique(DEGAT201_down_anytime$gene))
 
 # list genes arranged by log2FC at R_240
-DEGAT201_list_anytime_arrange_R_240 <- 
+DEGAT201_list_anytime_arrange_240 <- 
   deseq_df_CT_vsGAT201 %>%
-  dplyr::filter(gene %in% DEGAT201_list_anytime, Condition_Time == "R_240") %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime, 
+                Condition_Time %in% c("R_240", "RS_240")) %>%
+  group_by(gene) %>%
+  dplyr::summarise(log2FC = mean(log2FC)) %>%
   dplyr::arrange(log2FC) %>%
   dplyr::pull(gene)
 
@@ -201,14 +206,59 @@ DEGAT201_list_anytime_arrange_R_240 <-
 plotheat_log2FC(genes = DEGAT201_list_anytime, 
                   data = deseq_df_CT_vsGAT201 %>%
                     dplyr::filter(gene %in% DEGAT201_list_anytime) %>%
-                    dplyr::mutate(gene = factor(gene, 
-                                                levels = DEGAT201_list_anytime_arrange_R_240))
-  ) + 
-  theme(axis.text.y = element_blank())
+                    dplyr::mutate(gene = factor(
+                      gene, 
+                      levels = DEGAT201_list_anytime_arrange_240)) 
+                ) + 
+  theme(axis.text.y = element_blank()) +
+  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                         high = "darkblue", low = "darkred",
+                       limits = c(-3.2, 3.2), oob = scales::squish)
+```
+
+### Select smaller list of genes that are very DE dependent on GAT201 at any timepoint
+
+We use a more severe cutoff of 8x difference, adjusted p-value 0.05.
+
+Here we again plot in order of log2FC averaged R_240 with RS_240.
+
+```{r select_DEGAT201_more_240}
+DEGAT201_up_anytime2 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC > 3, padj < 0.05) 
+
+DEGAT201_down_anytime2 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC < -3, padj < 0.05)
+
+DEGAT201_list_anytime2 <- c(unique(DEGAT201_up_anytime2$gene),
+                           unique(DEGAT201_down_anytime2$gene))
+
+# list genes arranged by log2FC at R_240
+DEGAT201_list_anytime2_arrange_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime2, 
+                Condition_Time %in% c("R_240", "RS_240")) %>%
+  group_by(gene) %>%
+  dplyr::summarise(log2FC = mean(log2FC)) %>%
+  dplyr::arrange(log2FC) %>%
+  dplyr::pull(gene)
+
+
+plotheat_log2FC(genes = DEGAT201_list_anytime2, 
+                  data = deseq_df_CT_vsGAT201 %>%
+                    dplyr::filter(gene %in% DEGAT201_list_anytime) %>%
+                    dplyr::mutate(gene = factor(
+                      gene, 
+                      levels = DEGAT201_list_anytime_arrange_240)) 
+                ) + 
+  theme(axis.text.y = element_text(size = 6)) +
+  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                         high = "darkblue", low = "darkred",
+                       limits = c(-4, 4), oob = scales::squish)
 ```
 
 # To do
 
 - do a better ordering or clustering of the heatmap
 - fix x-axis labels on heatmap to be informative
-- maybe make a smaller plot with sample gene names printed?
