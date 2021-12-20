@@ -75,8 +75,8 @@ samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx")
     dplyr::mutate(GAT201 = 
                     forcats::fct_collapse(Strain, 
                                           "WT" = c("a","A"), 
-                                          "∆" = c("B","M")) %>% 
-                    forcats::fct_relevel("∆")
+                                          "del" = c("B","M")) %>% 
+                    forcats::fct_relevel("del")
                   ) 
 
 ```
@@ -125,9 +125,9 @@ pcdf_rlog <- bind_cols(
     mutate(GAT201_Cond = interaction(GAT201, Condition, sep = "_"),
            GAT201_Serum = forcats::fct_collapse(
              GAT201_Cond,
-             "∆_none"   = c("∆_R", "∆_Y"),
+             "del_none"   = c("del_R", "del_Y"),
              "WT_none"   = c("WT_R", "WT_Y"),
-             "∆_Serum" = "∆_RS",
+             "del_Serum" = "del_RS",
              "WT_Serum"  = "WT_RS"
            ),
     ),
@@ -191,14 +191,15 @@ plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
     geom_vline(xintercept = 0) +
     geom_hline(yintercept = 0) +
     geom_point(aes_string(x = xpc, y = ypc)) +
-    scale_shape_manual("Gat201, Serum",
-                       values = c("∆_none"   = 0,
-                                  "WT_none"   = 15,
-                                  "∆_Serum" = 2,
-                                  "WT_Serum"  = 17),
-                       labels = c("∆_none"   = "∆,  none",
+    scale_shape_manual("Strain, Serum",
+                       guide = guide_legend(ncol= 2),
+                       values = c("del_none"   = 2,
+                                  "WT_none"   = 1,
+                                  "del_Serum" = 17,
+                                  "WT_Serum"  = 16),
+                       labels = c("del_none"   = "∆,  none",
                                   "WT_none"   = "WT, none",
-                                  "∆_Serum" = "∆,  + serum",
+                                  "del_Serum" = "∆,  + serum",
                                   "WT_Serum"  = "WT, + serum")
     ) +
     scale_colour_manual("Time (mins.)",
@@ -233,15 +234,18 @@ PC3vs4 <- plot_PCA_Time_GC("PC3", "PC4") + theme(legend.position = "none")
 # get the legend
 PC_legend_Time_GC <- get_legend( 
   plot_PCA_Time_GC() + 
-    theme(legend.box.margin = margin(0, 0, 0, 12))
+    theme(legend.position = c(0.05, 0.6),
+      legend.box.margin = margin(4, 5, 4, 4), 
+          legend.box.background = element_rect(colour= "grey50", size = 0.25))
   )
 
 # plot those aligned in a grid
 
-plot_grid(PC1vs2, PC_legend_Time_GC,   plot_percentvar_rlog,
-          PC1vs3, PC2vs3, NULL, 
+plot_grid(PC1vs2, plot_percentvar_rlog, NULL,   
+          PC1vs3, PC2vs3, PC_legend_Time_GC,
           PC1vs4, PC2vs4, PC3vs4, 
-  align = "hv")
+          ncol = 3,
+          align = "hv")
 ```
 
 This plot shows that PC3 reports on Gat201 status,  vs WT. 
