@@ -1,0 +1,214 @@
+---
+title: "DEseq analysis of Gat201-dependent gene expression"
+author: "Liz Hughes and Edward Wallace"
+date: "20/12/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Summary
+
+This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend only on Gat201 at later timepoints.
+
+The first goal is heatmap of Gat201-dependent differential gene expression.
+
+A later goal is lists of Gat201-DEGs for comparison with ChIP-seq.
+
+# Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(genefilter)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+# Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+```
+
+
+# Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+```{r load_sample_sheet}
+
+Condition_Time_levels <- c("Y_0", 
+                           "R_30", "R_120", "R_240",
+                           "RS_30", "RS_120", "RS_240") 
+
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "del" = c("B","M")) %>% 
+                    forcats::fct_relevel("del"),
+                  Timepoint = factor(Timepoint),
+                  Condition_Time = factor(
+                    paste(Condition, Time, sep = "_"),
+                    levels = Condition_Time_levels
+                  )
+    )
+
+```
+
+# Select counts
+
+```{r select_counts_all}
+
+counts_all <-
+      dplyr::select(counts, samplesheet$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid)
+
+```
+
+# Construct the data object from the matrix of counts and the samplesheet information table
+
+```{r deseq_Condition_Time_GAT201}
+
+dds_all <- DESeqDataSetFromMatrix(countData = counts_all,
+                                   colData = samplesheet,
+                                   design = ~ Condition_Time + GAT201:Condition_Time - 1 ) %>%
+  DESeq()
+
+dds_all
+resultsNames(dds_all)
+```
+
+```{r tidy_deseq_Condition_Time_GAT201}
+coefnames_GAT201 <- c("Condition_TimeY_0.GAT201WT", "Condition_TimeR_30.GAT201WT",
+                      "Condition_TimeR_120.GAT201WT",  "Condition_TimeR_240.GAT201WT",
+                      "Condition_TimeRS_30.GAT201WT",  "Condition_TimeRS_120.GAT201WT",
+                      "Condition_TimeRS_240.GAT201WT")
+
+# Create a tidy data frame that contains only the GAT201-dependent log2FC
+# in a helpful format for plotting
+deseq_df_CT_vsGAT201 <- 
+  biobroom::tidy.DESeqDataSet(dds_all) %>%
+  dplyr::filter(term %in% coefnames_GAT201) %>%
+  mutate(Condition_Time = term %>%
+           stringr::str_remove("Condition_Time") %>%
+           stringr::str_remove(".GAT201WT") %>%
+           factor(levels = Condition_Time_levels)) %>%
+  select(Condition_Time, gene, baseMean, log2FC = estimate, stderror, padj = p.adjusted)
+
+# check we retained all the levels
+unique(deseq_df_CT_vsGAT201$Condition_Time)
+```
+
+### Reality-check by plotting fold change for a couple of known genes
+
+Check that some marker genes are behaving as expected:
+
+- GAT204 CNAG_06762, up in WT
+- TSA1 CNAG_06917, up in WT
+- ACT1 CNAG_00483, not really affected
+
+```{r plotpoints_log2FC_select}
+
+ggplot( data = dplyr::filter(deseq_df_CT_vsGAT201, 
+                             gene %in% c("CNAG_06762", "CNAG_06917", "CNAG_00483"))
+        ) +
+  geom_point(aes(x = Condition_Time, y = log2FC, colour = gene, shape = gene))
+  
+```
+
+```{r plotheat_log2FC_select}
+
+plotheat_log2FC <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00483"),
+                             data = deseq_df_CT_vsGAT201) {
+  ggplot( data = dplyr::filter(data, 
+                               gene %in% genes)
+  ) +
+    geom_tile(aes(x = Condition_Time, y = gene, fill = log2FC)) +
+    scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                         high = "darkblue", low = "darkred") +
+    coord_cartesian(expand = c(0,0)) +
+    theme(panel.grid.major = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.y = element_blank())
+}
+
+plotheat_log2FC()
+
+plotheat_log2FC(genes = c("CNAG_05392", "CNAG_06246", "CNAG_03438"))
+```
+
+### Select genes that are DE dependent on GAT201 at any timepoint
+
+Here we also plot in order of log2FC at R_240.
+
+```{r select_DEGAT201}
+DEGAT201_up_anytime <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC > 1, padj < 0.05) 
+
+DEGAT201_down_anytime <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC < -1, padj < 0.05)
+
+DEGAT201_list_anytime <- c(unique(DEGAT201_up_anytime$gene),
+                           unique(DEGAT201_down_anytime$gene))
+
+# list genes arranged by log2FC at R_240
+DEGAT201_list_anytime_arrange_R_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime, Condition_Time == "R_240") %>%
+  dplyr::arrange(log2FC) %>%
+  dplyr::pull(gene)
+
+
+plotheat_log2FC(genes = DEGAT201_list_anytime, 
+                  data = deseq_df_CT_vsGAT201 %>%
+                    dplyr::filter(gene %in% DEGAT201_list_anytime) %>%
+                    dplyr::mutate(gene = factor(gene, 
+                                                levels = DEGAT201_list_anytime_arrange_R_240))
+  ) + 
+  theme(axis.text.y = element_blank())
+```
+
+# To do
+
+- do a better ordering or clustering of the heatmap
+- fix x-axis labels on heatmap to be informative
+- maybe make a smaller plot with sample gene names printed?
