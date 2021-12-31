@@ -150,6 +150,67 @@ deseq_df_CT_vsGAT201 <-
 unique(deseq_df_CT_vsGAT201$Condition_Time)
 ```
 
+## Count the number of DEGs up and down at each Condition and Time
+
+```{r countDEGs_CT_vsGAT201, fig.width = 6, fig.height = 3}
+countDEGs_CT_vsGAT201 <- 
+  deseq_df_CT_vsGAT201 %>%
+  group_by(Condition_Time) %>%
+  summarise(Up   = sum(log2FC > 1  & padj < 0.05, na.rm = TRUE),
+            Down = sum(log2FC < -1 & padj < 0.05, na.rm = TRUE))
+
+## prototype plot; not run but included as an example.
+# ggplot(data = countDEGs_CT_vsGAT201,
+#        aes(x = Condition_Time)) +
+#   geom_col(aes(y = Up))
+
+countDEGs_CT_vsGAT201_long <- 
+  countDEGs_CT_vsGAT201 %>%
+  pivot_longer(cols = c(Up,Down),
+               names_to = "Direction",
+               values_to = "DEG_count")
+
+ggplot(data = countDEGs_CT_vsGAT201_long,
+       aes(x = Condition_Time, y = DEG_count, fill = Direction)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual("WT vs ∆gat201",
+                    values = c("Up" = "darkblue", 
+                               "Down" = "darkred")) +
+  scale_y_continuous("Number of DEGs\n2x, 5% FDR", expand = c(0,0)) +
+  theme(panel.grid.major.x = element_blank())
+
+```
+
+## Volcano plot at RPMI 4h only
+
+We are just plotting this Condition/Time because it has the most DEGs.
+
+To do: label some specific genes here.
+
+```{r volcano_RPMI4h_vsGAT201, fig.width = 6, fig.height = 3}
+
+ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                            Condition_Time == "R_240"),
+       aes(x = log2FC, y = -log10(padj)) ) +
+  geom_point(size = 0.5, colour = "grey50") +
+  geom_point(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                                  Condition_Time == "R_240",
+                                  log2FC > 1, padj < 0.05),
+             size = 1, colour = "darkblue") +
+  geom_point(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                                  Condition_Time == "R_240",
+                                  log2FC < -1, padj < 0.05),
+             size = 1, colour = "darkred") +
+  scale_y_continuous(limits = c(0,100), expand = c(0,0),
+                     oob=scales::squish) +
+  scale_x_continuous("log2 fold-change, WT vs ∆gat201",
+                     breaks = -5:5,
+                     limits = c(-5,5), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_cartesian(clip = "off")
+
+```
+
 ## Reality-check by plotting fold change for a couple of known genes
 
 Check that some marker genes are behaving as expected:
@@ -293,11 +354,12 @@ plotheat_log2FC(genes = DEGAT201_list_anytime8x,
                        limits = c(-4, 4), oob = scales::squish)
 ```
 
+
+
 # To do
 
 - Choose which heatmap version to use in draft multipanel figure
 - Fix x-axis labels on heatmap to be informative
-- Figure of number of DEGs up and down at each Condition &Time
-- Make a representative volcano plot
+- Draft a multipanel figure
 - Write output list of differentially expressed genes
 - Add venn diagram comparing DEG 
