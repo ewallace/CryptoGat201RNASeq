@@ -190,7 +190,6 @@ We are just plotting this Condition/Time because it has the most DEGs.
 To do: label some specific genes here.
 
 ```{r volcano_RPMI4h_vsGAT201, fig.width = 6, fig.height = 3}
-set.seed(0) # means the text labels will be in same "random" place every time
 volcano_RPMI4h_vsGAT201 <- 
   ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
                               Condition_Time == "R_240"),
@@ -215,17 +214,19 @@ volcano_RPMI4h_vsGAT201 <-
   geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
                               Condition_Time == "R_240",
                               gene == "CNAG_01551"),
-                  min.segment.length = 0,
+                  min.segment.length = 0, seed = 0,
                   colour = "darkblue", label = "GAT201")  +
-  # geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
-  #                             Condition_Time == "R_240",
-  #                             gene == "CNAG_06762"),
-  #                 min.segment.length = 0,
-  #                 colour = "darkblue", label = "GAT204")   +
+  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                              Condition_Time == "R_240",
+                              gene == "CNAG_06762"),
+                  min.segment.length = 0, seed = 0,
+                  nudge_x = -0.1, nudge_y = 50,
+                  colour = "darkblue", label = "GAT204")   +
   geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
                               Condition_Time == "R_240",
                               gene == "CNAG_03894"),
-                  min.segment.length = 0,
+                  min.segment.length = 0, seed = 2,
+                  nudge_y = 20,
                   colour = "darkblue", label = "PDR802")
 
 volcano_RPMI4h_vsGAT201
@@ -415,12 +416,18 @@ plot_grid(
 
 ```
 
+Figure. GAT201 has a large impact on gene expression as cells reactivate, acting via its direct targets.
+A. There is more GAT201-dependent differential gene expression at later timepoints in activation. Figure shows the number of 2-fold differentially expressed genes at 5% FDR at each combination of growth condition and timepoint. Differential expression is calculated by DESeq2 using the Wald test as the average over 4 samples: 2 wild-type and 2 deletion strains, each strain measured in biological duplicate.
+B. GAT201 promotes upregulation of specific genes more than downregulation. Volcano plot of log2 fold-change and p-value, with differential expressed genes calculated and coloured as in panel A. Genes with extreme p-values or fold-changes are plotted at the edge of the panel area.
+C. GAT201-dependent differential gene expression is more extreme at later timepoints. The panel shows all the genes that are at least 8x differentially expressed in any combination of condition and time, ordered by their average fold-change at 4 hours. 
+D. A large proportion of differentially expressed genes are direct targets of GAT201. The panel shows the DEGs (as in panel B) compared to GAT201 targets measured by ChIP-seq from Homer et al. 2016.
+E. Gene Ontology analysis shows that...
+
 
 # To do
 
 - Choose which heatmap version to use in draft multipanel figure
 - Fix x-axis labels on heatmap to be informative
-- Draft legend for multipanel figure
 - Write output list of differentially expressed genes
 - Add venn diagram comparing DEG 
 - Add GO analysis
