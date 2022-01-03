@@ -1,7 +1,7 @@
 ---
 title: "DEseq analysis of Gat201-dependent gene expression"
 author: "Liz Hughes and Edward Wallace"
-date: "20/12/2021"
+date: "03/01/2022"
 output:
   html_document:
     toc: yes
@@ -22,9 +22,16 @@ knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 
 This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend only on Gat201 at later timepoints. This means that we treat the two WT strains as the same, and the two ∆gat201 strains as the same.
 
-The first goal is heatmap of Gat201-dependent differential gene expression.
+This makes figure panels:
 
-A later goal is lists of Gat201-DEGs for comparison with ChIP-seq.
+- count Gat201-dependent DEGs at each condition and timepoint
+- volcano plot of Gat201-dependent DE at the most different timepoint (RPMI 4hours)
+- outputs list of Gat201-DEGs at RPMI 4hours
+- heatmap of select Gat201-DEGs at each condition and timepoint
+- compare Gat201-DEGs with ChIP-seq data by ven diagram
+- Some kind of GO analysis panel - TO DO
+
+These are then combined into a multipanel figure, planned as figure 4 of the manuscript.
 
 # Setup: load packages, load data, clean and prep data
 
@@ -185,23 +192,32 @@ barplot_countDEGs_CT_vsGAT201
 
 ## Volcano plot at RPMI 4h only
 
-We are just plotting this Condition/Time because it has the most DEGs.
+We are plotting only this Condition/Time because it has the most DEGs.
 
-To do: label some specific genes here.
 
 ```{r volcano_RPMI4h_vsGAT201, fig.width = 6, fig.height = 3}
+# Make data frames of DEGs up and down, arranged by log2FC
+DEGdf_RPMI4h_vsGAT201_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "R_240",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::arrange(desc(log2FC))
+
+DEGdf_RPMI4h_vsGAT201_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "R_240",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::arrange(log2FC)
+
+
 volcano_RPMI4h_vsGAT201 <- 
   ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
                               Condition_Time == "R_240"),
          aes(x = log2FC, y = -log10(padj)) ) +
   geom_point(size = 0.5, colour = "grey50") +
-  geom_point(data = dplyr::filter(deseq_df_CT_vsGAT201,
-                                  Condition_Time == "R_240",
-                                  log2FC > 1, padj < 0.05),
+  geom_point(data = DEGdf_RPMI4h_vsGAT201_up2x_FDR5,
              size = 1, colour = "darkblue") +
-  geom_point(data = dplyr::filter(deseq_df_CT_vsGAT201,
-                                  Condition_Time == "R_240",
-                                  log2FC < -1, padj < 0.05),
+  geom_point(data = DEGdf_RPMI4h_vsGAT201_down2x_FDR5,
              size = 1, colour = "darkred") +
   scale_y_continuous("-log10(p)",
                      limits = c(0,100), expand = c(0,0),
@@ -231,6 +247,21 @@ volcano_RPMI4h_vsGAT201 <-
 
 volcano_RPMI4h_vsGAT201
 ```
+
+## Output the DEGs at RPMI 4h only
+
+Write output to tsv files, in order of log2 fold-change as calculated above.
+
+```{r DEGs_RPMI4h_vsGAT201}
+readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+                   mutate_if(is.numeric, signif, digits = 5),
+                 file = "../results/DEGdf_RPMI4h_vsGAT201_up2x_FDR5.txt")
+
+readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+                   mutate_if(is.numeric, signif, digits = 5),
+                 file = "../results/DEGdf_RPMI4h_vsGAT201downp2x_FDR5.txt")
+```
+
 
 ## Reality-check by plotting fold change for a couple of known genes
 
@@ -380,6 +411,131 @@ heatmap_select_DEGAT201_anytime8x_240 <-
 heatmap_select_DEGAT201_anytime8x_240
 ```
 
+# Compare DEGs to ChIP-seq results from Homer et al
+
+## Load ChIP-seq data
+
+
+```{r load_chipseq}
+ChIPtargets_Gat201 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Gat201 ChIP-Seq")
+
+ChIPtargets_Gat204 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Gat204 ChIP-Seq")
+
+ChIPtargets_Liv3 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Liv3 ChIP-Seq")
+```
+
+## Venn diagram of DEGs at 4hr and Gat201 targets
+
+```{r venn_RPMI4h_vsGAT201_Gat201ChIP, fig.width = 3, fig.height = 2}
+
+vennplotdata_Gat201 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Gat201ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Gat201), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Gat201)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Gat201)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Gat201ChIP
+
+```
+
+Here the majority of GAT201_up genes are direct targets, p = 
+`r length(intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene),
+dplyr::pull(ChIPtargets_Gat201, CNAG))) / 
+length(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene))`.
+
+This contrasts to a proportion of approximately 
+`r length( dplyr::pull(ChIPtargets_Gat201, CNAG) ) / nrow(counts)`
+Gat201 targets in the genome.
+
+That's approximately a 3x enrichment.
+
+
+## Venn diagram of DEGs at 4hr and Gat204 targets
+
+```{r venn_RPMI4h_vsGAT201_Gat204ChIP, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_Gat204 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "Gat204_ChIP" = dplyr::pull(ChIPtargets_Gat204, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Gat204ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Gat204), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Gat204)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Gat204)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "forestgreen", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Gat204ChIP
+```
+
+This shows that all the Gat204 targets that are differentially regulated are also Gat201 targets.
+Also because 99% of Gat204 targets are Gat201 targets too.
+
+
+## Venn diagram of DEGs at 4hr and Liv3 targets
+
+```{r venn_RPMI4h_vsGAT201_Liv3ChIP, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_Liv3 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "Liv3_ChIP" = dplyr::pull(ChIPtargets_Liv3, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Liv3ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Liv3), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Liv3)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Liv3)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "goldenrod", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Liv3ChIP
+
+```
+
+Similarly, almost all the Liv3 targets that are differentially regulated are also Gat201 targets.
+
+Collectively this argues that Gat201 is itself the major driver of differential gene expression on this timescale.
+
+
 # Draft Multipanel Figure
 
 
@@ -396,16 +552,15 @@ figure_left_column <-
   )
 
 figure_right_column <- 
-    plot_grid(
-    ggdraw() + 
-      draw_label("ChIP-seq\nVenn diagram",
-                 colour = "grey50", size = 18),
+  plot_grid(
+    venn_RPMI4h_vsGAT201_Gat201ChIP  +
+      theme(plot.margin = unit(c(0,0,0.1,0.2),"in")),
     ggdraw() + 
       draw_label("GO analysis",
                  colour = "grey50", size = 18),    
     ncol = 1,
     labels = c("D","E"),
-    rel_heights = c(2,3)
+    rel_heights = c(3,7)
   )
 
 plot_grid(
@@ -420,14 +575,14 @@ Figure. GAT201 has a large impact on gene expression as cells reactivate, acting
 A. There is more GAT201-dependent differential gene expression at later timepoints in activation. Figure shows the number of 2-fold differentially expressed genes at 5% FDR at each combination of growth condition and timepoint. Differential expression is calculated by DESeq2 using the Wald test as the average over 4 samples: 2 wild-type and 2 deletion strains, each strain measured in biological duplicate.
 B. GAT201 promotes upregulation of specific genes more than downregulation. Volcano plot of log2 fold-change and p-value, with differential expressed genes calculated and coloured as in panel A. Genes with extreme p-values or fold-changes are plotted at the edge of the panel area.
 C. GAT201-dependent differential gene expression is more extreme at later timepoints. The panel shows all the genes that are at least 8x differentially expressed in any combination of condition and time, ordered by their average fold-change at 4 hours. 
-D. A large proportion of differentially expressed genes are direct targets of GAT201. The panel shows the DEGs (as in panel B) compared to GAT201 targets measured by ChIP-seq from Homer et al. 2016.
+D. A majority of differentially expressed genes are direct targets of GAT201. The panel shows the DEGs in RPMI at 4 hours (as in panel B) compared to Gat201 targets measured by ChIP-seq from Homer et al. 2016. This is approximately a 3-fold enrichment.
 E. Gene Ontology analysis shows that...
 
 
 # To do
 
-- Choose which heatmap version to use in draft multipanel figure
+- Discuss which heatmap version to use in draft multipanel figure
 - Fix x-axis labels on heatmap to be informative
-- Write output list of differentially expressed genes
-- Add venn diagram comparing DEG 
-- Add GO analysis
+- Add informative header to output list of differentially expressed genes
+- Do we need a statistical test of enrichment?
+- Add GO analysis panel
