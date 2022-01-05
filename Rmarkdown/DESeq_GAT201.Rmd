@@ -273,6 +273,46 @@ writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
 ```
 
 
+## Check DEG lists at 4hrs for overlap plus/minus serum
+
+Double-checking the overlap between GAT201-dependent DE genelists in RPMI with and without serum at 4h.
+
+
+```{r venn_vsGAT201_RPMI4h_vsserum, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_pmserum <- 
+  list(
+    "Down_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+    "Down_serum" = dplyr::filter(deseq_df_CT_vsGAT201,
+                                 Condition_Time == "RS_240",
+                                 log2FC < -1, padj < 0.05) %>%
+      dplyr::pull(gene),
+    "Up_serum" = dplyr::filter(deseq_df_CT_vsGAT201,
+                                 Condition_Time == "RS_240",
+                                 log2FC > 1, padj < 0.05) %>%
+      dplyr::pull(gene),
+    "Up_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_pmserum), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_pmserum)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_pmserum)) +
+  theme_void() +
+  scale_colour_manual(values = c("darkred", "magenta2", "cyan3", "darkblue")) +
+  coord_sf(clip = "off")
+
+```
+
+This confirms that in each direction about half the no-serum DEGs are same-direction DE in plus serum.
+Very few are DE plus-serum only. It supports the point that the direction of change is the same but the magnitude is different depending on serum.
+
+
 ## Reality-check by plotting fold change for a couple of known genes
 
 Check that some marker genes are behaving as expected:
@@ -544,6 +584,7 @@ venn_RPMI4h_vsGAT201_Liv3ChIP
 Similarly, almost all the Liv3 targets that are differentially regulated are also Gat201 targets.
 
 Collectively this argues that Gat201 is itself the major driver of differential gene expression on this timescale.
+
 
 
 # Draft Multipanel Figure
