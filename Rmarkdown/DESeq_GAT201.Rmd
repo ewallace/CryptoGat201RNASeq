@@ -1,0 +1,639 @@
+---
+title: "DEseq analysis of Gat201-dependent gene expression"
+author: "Liz Hughes and Edward Wallace"
+date: "05/01/2022"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Summary
+
+This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend only on Gat201 at later timepoints. This means that we treat the two WT strains as the same, and the two ∆gat201 strains as the same.
+
+This makes figure panels:
+
+- count Gat201-dependent DEGs at each condition and timepoint
+- volcano plot of Gat201-dependent DE at the most different timepoint (RPMI 4hours)
+- outputs list of Gat201-DEGs at RPMI 4hours
+- heatmap of select Gat201-DEGs at each condition and timepoint
+- compare Gat201-DEGs with ChIP-seq data by ven diagram
+- Some kind of GO analysis panel - TO DO
+
+These are then combined into a multipanel figure, planned as figure 4 of the manuscript.
+
+# Setup: load packages, load data, clean and prep data
+
+
+## Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(genefilter)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+## Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+```
+
+
+## Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+Here we choose how the Strain labels behave by manipulating the factors. This creates a new variable `GAT201` whose levels are `del` and `WT`.
+
+```{r load_sample_sheet}
+
+Condition_Time_levels <- c("Y_0", 
+                           "R_30", "R_120", "R_240",
+                           "RS_30", "RS_120", "RS_240") 
+
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "del" = c("B","M")) %>% 
+                    forcats::fct_relevel("del"),
+                  Timepoint = factor(Timepoint),
+                  Condition_Time = factor(
+                    paste(Condition, Time, sep = "_"),
+                    levels = Condition_Time_levels
+                  )
+    )
+
+```
+
+## Select counts
+
+```{r select_counts_all, warning = FALSE}
+
+counts_all <-
+      dplyr::select(counts, samplesheet$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid)
+
+```
+
+# Differential gene expression analysis with DESEq2
+
+## Run DESeq2 analysis dependent on Condition/Time and GAT201
+
+This first uses the matrix of counts and the samplesheet information table to construct the DESeq2 data object, then immediately runs the analysis.
+
+The design formula `~ Condition_Time + GAT201:Condition_Time - 1` ensures that every combination of Condition and Time has a coefficient, where we remove the intercept term by including `- 1`. Then the interaction term `GAT201:Condition_Time` gives the effect of `GAT201` separately at each combination of Condition and Time, which we are interested in.
+
+```{r deseq_Condition_Time_GAT201}
+
+dds_all <- DESeqDataSetFromMatrix(
+    countData = counts_all,
+    colData = samplesheet,
+    design = ~ Condition_Time + GAT201:Condition_Time - 1 ) %>%
+  DESeq()
+
+dds_all
+resultsNames(dds_all)
+```
+
+## Select GAT201-dependent log2FC at each timepoint
+
+```{r tidy_deseq_Condition_Time_GAT201}
+coefnames_GAT201 <- c("Condition_TimeY_0.GAT201WT", "Condition_TimeR_30.GAT201WT",
+                      "Condition_TimeR_120.GAT201WT",  "Condition_TimeR_240.GAT201WT",
+                      "Condition_TimeRS_30.GAT201WT",  "Condition_TimeRS_120.GAT201WT",
+                      "Condition_TimeRS_240.GAT201WT")
+
+# Create a tidy data frame that contains only the GAT201-dependent log2FC
+# in a helpful format for plotting
+deseq_df_CT_vsGAT201 <- 
+  biobroom::tidy.DESeqDataSet(dds_all) %>%
+  dplyr::filter(term %in% coefnames_GAT201) %>%
+  mutate(Condition_Time = term %>%
+           stringr::str_remove("Condition_Time") %>%
+           stringr::str_remove(".GAT201WT") %>%
+           factor(levels = Condition_Time_levels)) %>%
+  select(Condition_Time, gene, baseMean, log2FC = estimate, stderror, padj = p.adjusted)
+
+# check we retained all the levels
+unique(deseq_df_CT_vsGAT201$Condition_Time)
+```
+
+## Count the number of DEGs up and down at each Condition and Time
+
+```{r countDEGs_CT_vsGAT201, fig.width = 6, fig.height = 3}
+countDEGs_CT_vsGAT201 <- 
+  deseq_df_CT_vsGAT201 %>%
+  group_by(Condition_Time) %>%
+  summarise(Up   = sum(log2FC > 1  & padj < 0.05, na.rm = TRUE),
+            Down = sum(log2FC < -1 & padj < 0.05, na.rm = TRUE))
+
+## prototype plot; not run but included as an example.
+# ggplot(data = countDEGs_CT_vsGAT201,
+#        aes(x = Condition_Time)) +
+#   geom_col(aes(y = Up))
+
+countDEGs_CT_vsGAT201_long <- 
+  countDEGs_CT_vsGAT201 %>%
+  pivot_longer(cols = c(Up,Down),
+               names_to = "Direction",
+               values_to = "DEG_count")
+
+barplot_countDEGs_CT_vsGAT201 <-
+  ggplot(data = countDEGs_CT_vsGAT201_long,
+         aes(x = Condition_Time, y = DEG_count, fill = Direction)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual("WT vs ∆gat201",
+                    values = c("Up" = "darkblue", 
+                               "Down" = "darkred")) +
+  scale_y_continuous("gene count\n2x DE, 5% FDR", expand = c(0,0)) +
+  theme(panel.grid.major.x = element_blank())
+
+barplot_countDEGs_CT_vsGAT201
+```
+
+## Volcano plot at RPMI 4h only
+
+We are plotting only this Condition/Time because it has the most DEGs.
+
+
+```{r volcano_RPMI4h_vsGAT201, fig.width = 6, fig.height = 3}
+# Make data frames of DEGs up and down, arranged by log2FC
+DEGdf_RPMI4h_vsGAT201_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "R_240",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::arrange(desc(log2FC))
+
+DEGdf_RPMI4h_vsGAT201_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "R_240",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::arrange(log2FC)
+
+
+volcano_RPMI4h_vsGAT201 <- 
+  ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                              Condition_Time == "R_240"),
+         aes(x = log2FC, y = -log10(padj)) ) +
+  geom_point(size = 0.5, colour = "grey50") +
+  geom_point(data = DEGdf_RPMI4h_vsGAT201_up2x_FDR5,
+             size = 1, colour = "darkblue") +
+  geom_point(data = DEGdf_RPMI4h_vsGAT201_down2x_FDR5,
+             size = 1, colour = "darkred") +
+  scale_y_continuous("-log10(p)",
+                     limits = c(0,100), expand = c(0,0),
+                     oob=scales::squish) +
+  scale_x_continuous("log2 fold-change, WT vs ∆gat201, RPMI at 4hrs",
+                     breaks = -5:5,
+                     limits = c(-5,5), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_cartesian(clip = "off") +
+  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                              Condition_Time == "R_240",
+                              gene == "CNAG_01551"),
+                  min.segment.length = 0, seed = 0,
+                  colour = "darkblue", label = "GAT201")  +
+  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                              Condition_Time == "R_240",
+                              gene == "CNAG_06762"),
+                  min.segment.length = 0, seed = 0,
+                  nudge_x = -0.1, nudge_y = 50,
+                  colour = "darkblue", label = "GAT204")   +
+  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
+                              Condition_Time == "R_240",
+                              gene == "CNAG_03894"),
+                  min.segment.length = 0, seed = 2,
+                  nudge_y = 20,
+                  colour = "darkblue", label = "PDR802")
+
+volcano_RPMI4h_vsGAT201
+```
+
+## Output the DEGs at RPMI 4h only
+
+Write output to tsv files, in order of log2 fold-change as calculated above.
+
+```{r DEGs_RPMI4h_vsGAT201}
+readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+                   mutate_if(is.numeric, signif, digits = 5),
+                 file = "../results/DEGdf_RPMI4h_vsGAT201_up2x_FDR5.txt")
+
+readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+                   mutate_if(is.numeric, signif, digits = 5),
+                 file = "../results/DEGdf_RPMI4h_vsGAT201_down2x_FDR5.txt")
+```
+
+```{r DEGids_RPMI4h_vsGAT201}
+writeLines(text = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+             pull(gene),
+           con = "../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt")
+
+writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+             pull(gene),
+           con = "../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt")
+```
+
+
+## Check DEG lists at 4hrs for overlap plus/minus serum
+
+Double-checking the overlap between GAT201-dependent DE genelists in RPMI with and without serum at 4h.
+
+
+```{r venn_vsGAT201_RPMI4h_vsserum, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_pmserum <- 
+  list(
+    "Down_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+    "Down_serum" = dplyr::filter(deseq_df_CT_vsGAT201,
+                                 Condition_Time == "RS_240",
+                                 log2FC < -1, padj < 0.05) %>%
+      dplyr::pull(gene),
+    "Up_serum" = dplyr::filter(deseq_df_CT_vsGAT201,
+                                 Condition_Time == "RS_240",
+                                 log2FC > 1, padj < 0.05) %>%
+      dplyr::pull(gene),
+    "Up_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_pmserum), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_pmserum)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_pmserum)) +
+  theme_void() +
+  scale_colour_manual(values = c("darkred", "magenta2", "cyan3", "darkblue")) +
+  coord_sf(clip = "off")
+
+```
+
+This confirms that in each direction about half the no-serum DEGs are same-direction DE in plus serum.
+Very few are DE plus-serum only. It supports the point that the direction of change is the same but the magnitude is different depending on serum.
+
+
+## Reality-check by plotting fold change for a couple of known genes
+
+Check that some marker genes are behaving as expected:
+
+- GAT204 CNAG_06762, up in WT
+- TSA1 CNAG_06917, up in WT
+- ACT1 CNAG_00483, not really affected
+
+```{r plotpoints_log2FC_select, fig.width = 6, fig.height = 3}
+
+ggplot( data = dplyr::filter(deseq_df_CT_vsGAT201, 
+                             gene %in% c("CNAG_06762", "CNAG_06917", "CNAG_00483"))
+        ) +
+  geom_point(aes(x = Condition_Time, y = log2FC, colour = gene, shape = gene))
+  
+```
+
+## Repeat reality-check by heatmap
+
+This also defines the `plotheat_log2FC` function that we will use later.
+
+```{r plotheat_log2FC_select, fig.width = 6, fig.height = 2}
+
+plotheat_log2FC <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00483"),
+                             data = deseq_df_CT_vsGAT201) {
+  ggplot( data = dplyr::filter(data, 
+                               gene %in% genes)
+  ) +
+    geom_tile(aes(x = Condition_Time, y = gene, fill = log2FC)) +
+    scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                         high = "darkblue", low = "darkred") +
+    coord_cartesian(expand = c(0,0)) +
+    theme(panel.grid.major = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.y = element_blank())
+}
+
+plotheat_log2FC()
+```
+
+## Plot heatmap of three transcription factors
+
+- ZAP104 CNAG_05392
+- PDR802 CNAG_03894
+- GAT204 CNAG_06762
+
+```{r plotheat_log2FC_TFs, fig.width = 6, fig.height = 2}
+
+plotheat_log2FC(genes = c("CNAG_05392", "CNAG_03894", "CNAG_06762"))
+```
+
+## Select genes that are DE dependent on GAT201 at any timepoint
+
+This is a step towards making a heatmap of select differentially-expressed genes.
+
+We use a cutoff of 2x difference, adjusted p-value 0.05.
+
+Here we also plot in order of log2FC, averaged R_240 with RS_240.
+
+```{r select_DEGAT201_anytime2x, fig.width = 7, fig.height = 6}
+DEGAT201_up_anytime2x <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC > 1, padj < 0.05) 
+
+DEGAT201_down_anytime2x <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC < -1, padj < 0.05)
+
+DEGAT201_list_anytime2x <- c(unique(DEGAT201_up_anytime2x$gene),
+                             unique(DEGAT201_down_anytime2x$gene))
+
+# list genes arranged by log2FC at average of R_240 and RS_240
+DEGAT201_list_anytime2x_arrange_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime2x, 
+                Condition_Time %in% c("R_240", "RS_240")) %>%
+  group_by(gene) %>%
+  dplyr::summarise(log2FC = mean(log2FC)) %>%
+  dplyr::arrange(log2FC) %>%
+  dplyr::pull(gene)
+
+# Create data frame with only those genes, ordered as above
+# Note we use factor levels to create the ordering
+deseq_df_CT_vsGAT201_anytime2x_arrange_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime2x) %>%
+  dplyr::mutate(gene = 
+                  factor(gene, 
+                         levels = DEGAT201_list_anytime2x_arrange_240))
+
+heatmap_select_DEGAT201_anytime2x_240 <- 
+  plotheat_log2FC(genes = DEGAT201_list_anytime2x, 
+                  data =  deseq_df_CT_vsGAT201_anytime2x_arrange_240) + 
+  theme(axis.text.y = element_blank()) +
+  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                       high = "darkblue", low = "darkred",
+                       limits = c(-3.2, 3.2), oob = scales::squish)
+
+heatmap_select_DEGAT201_anytime2x_240
+```
+
+## Select smaller list of genes that are very DE dependent on GAT201 at any timepoint
+
+We use a more severe cutoff of 8x difference, adjusted p-value 0.05.
+
+Here we again plot in order of log2FC averaged R_240 with RS_240.
+
+```{r select_DEGAT201_anytime8x_240, fig.width = 7, fig.height = 6}
+DEGAT201_up_anytime8x <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC > 3, padj < 0.05) 
+
+DEGAT201_down_anytime8x <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(log2FC < -3, padj < 0.05)
+
+DEGAT201_list_anytime8x <- c(unique(DEGAT201_up_anytime8x$gene),
+                             unique(DEGAT201_down_anytime8x$gene))
+
+# list genes arranged by log2FC at R_240
+DEGAT201_list_anytime8x_arrange_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime8x, 
+                Condition_Time %in% c("R_240", "RS_240")) %>%
+  group_by(gene) %>%
+  dplyr::summarise(log2FC = mean(log2FC)) %>%
+  dplyr::arrange(log2FC) %>%
+  dplyr::pull(gene)
+
+# Create data frame with only those genes, ordered as above
+deseq_df_CT_vsGAT201_anytime8x_arrange_240 <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(gene %in% DEGAT201_list_anytime8x) %>%
+  dplyr::mutate(gene = 
+                  factor(gene, 
+                         levels = DEGAT201_list_anytime8x_arrange_240))
+
+heatmap_select_DEGAT201_anytime8x_240 <- 
+  plotheat_log2FC(genes = DEGAT201_list_anytime8x, 
+                  data = deseq_df_CT_vsGAT201_anytime8x_arrange_240) + 
+  theme(axis.text.y = element_text(size = 8)) +
+  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                       high = "darkblue", low = "darkred",
+                       limits = c(-4, 4), oob = scales::squish)
+
+heatmap_select_DEGAT201_anytime8x_240
+```
+
+# Compare DEGs to ChIP-seq results from Homer et al
+
+## Load ChIP-seq data
+
+
+```{r load_chipseq}
+ChIPtargets_Gat201 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Gat201 ChIP-Seq")
+
+ChIPtargets_Gat204 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Gat204 ChIP-Seq")
+
+ChIPtargets_Liv3 <-
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Liv3 ChIP-Seq")
+```
+
+## Venn diagram of DEGs at 4hr and Gat201 targets
+
+```{r venn_RPMI4h_vsGAT201_Gat201ChIP, fig.width = 3, fig.height = 2}
+
+vennplotdata_Gat201 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Gat201ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Gat201), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Gat201)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Gat201)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Gat201ChIP
+
+```
+
+Here the majority of GAT201_up genes are direct targets, p = 
+`r length(intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene),
+dplyr::pull(ChIPtargets_Gat201, CNAG))) / 
+length(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene))`.
+
+This contrasts to a proportion of approximately 
+`r length( dplyr::pull(ChIPtargets_Gat201, CNAG) ) / nrow(counts)`
+Gat201 targets in the genome.
+
+That's approximately a 3x enrichment.
+
+
+## Venn diagram of DEGs at 4hr and Gat204 targets
+
+```{r venn_RPMI4h_vsGAT201_Gat204ChIP, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_Gat204 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "Gat204_ChIP" = dplyr::pull(ChIPtargets_Gat204, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Gat204ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Gat204), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Gat204)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Gat204)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "forestgreen", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Gat204ChIP
+```
+
+This shows that all the Gat204 targets that are differentially regulated are also Gat201 targets.
+Also because 99% of Gat204 targets are Gat201 targets too.
+
+
+## Venn diagram of DEGs at 4hr and Liv3 targets
+
+```{r venn_RPMI4h_vsGAT201_Liv3ChIP, fig.width = 3.5, fig.height = 2}
+
+vennplotdata_Liv3 <- 
+  list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
+       "Liv3_ChIP" = dplyr::pull(ChIPtargets_Liv3, CNAG),
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RPMI4h_vsGAT201_Liv3ChIP <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata_Liv3), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata_Liv3)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata_Liv3)) +
+  theme_void() +
+  scale_colour_manual(values = c("grey20", "goldenrod", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RPMI4h_vsGAT201_Liv3ChIP
+
+```
+
+Similarly, almost all the Liv3 targets that are differentially regulated are also Gat201 targets.
+
+Collectively this argues that Gat201 is itself the major driver of differential gene expression on this timescale.
+
+
+
+# Draft Multipanel Figure
+
+
+```{r figure_DESEQ_GAT201, fig.width = 9, fig.height = 9}
+figure_left_column <- 
+    plot_grid(
+    barplot_countDEGs_CT_vsGAT201 +
+      theme(plot.margin = unit(c(0,0,0,0.1),"in")),
+    volcano_RPMI4h_vsGAT201,
+    heatmap_select_DEGAT201_anytime8x_240,
+    ncol = 1,
+    rel_heights = c(1,1,3),
+    labels = c("A","B","C")
+  )
+
+figure_right_column <- 
+  plot_grid(
+    venn_RPMI4h_vsGAT201_Gat201ChIP  +
+      theme(plot.margin = unit(c(0,0,0.1,0.2),"in")),
+    ggdraw() + 
+      draw_label("GO analysis",
+                 colour = "grey50", size = 18),    
+    ncol = 1,
+    labels = c("D","E"),
+    rel_heights = c(3,7)
+  )
+
+plot_grid(
+  figure_left_column,
+  figure_right_column,
+  ncol = 2,
+  rel_widths = c(2,1))
+
+```
+
+Figure. GAT201 has a large impact on gene expression as cells reactivate, acting via its direct targets.
+A. There is more GAT201-dependent differential gene expression at later timepoints in activation. Figure shows the number of 2-fold differentially expressed genes at 5% FDR at each combination of growth condition and timepoint. Differential expression is calculated by DESeq2 using the Wald test as the average over 4 samples: 2 wild-type and 2 deletion strains, each strain measured in biological duplicate.
+B. GAT201 promotes upregulation of specific genes more than downregulation. Volcano plot of log2 fold-change and p-value, with differential expressed genes calculated and coloured as in panel A. Genes with extreme p-values or fold-changes are plotted at the edge of the panel area.
+C. GAT201-dependent differential gene expression is more extreme at later timepoints. The panel shows all the genes that are at least 8x differentially expressed in any combination of condition and time, ordered by their average fold-change at 4 hours. 
+D. A majority of differentially expressed genes are direct targets of GAT201. The panel shows the DEGs in RPMI at 4 hours (as in panel B) compared to Gat201 targets measured by ChIP-seq from Homer et al. 2016. This is approximately a 3-fold enrichment.
+E. Gene Ontology analysis shows that...
+
+
+# To do
+
+- Discuss which heatmap version to use in draft multipanel figure
+- Fix x-axis labels on heatmap to be informative
+- Add informative header to output list of differentially expressed genes
+- Do we need a statistical test of enrichment?
+- Add GO analysis panel
