@@ -1,7 +1,7 @@
 ---
 title: "DEseq analysis of Gat201-dependent gene expression"
 author: "Liz Hughes and Edward Wallace"
-date: "03/01/2022"
+date: "05/01/2022"
 output:
   html_document:
     toc: yes
@@ -259,7 +259,17 @@ readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
 
 readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
                    mutate_if(is.numeric, signif, digits = 5),
-                 file = "../results/DEGdf_RPMI4h_vsGAT201downp2x_FDR5.txt")
+                 file = "../results/DEGdf_RPMI4h_vsGAT201_down2x_FDR5.txt")
+```
+
+```{r DEGids_RPMI4h_vsGAT201}
+writeLines(text = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+             pull(gene),
+           con = "../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt")
+
+writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+             pull(gene),
+           con = "../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt")
 ```
 
 

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Liz Hughes and Edward Wallace" />
 
-<meta name="date" content="2022-03-01" />
+<meta name="date" content="2022-05-01" />
 
 <title>DEseq analysis of Gat201-dependent gene expression</title>
 
@@ -167,7 +167,7 @@ pre code {
 
 <h1 class="title toc-ignore">DEseq analysis of Gat201-dependent gene expression</h1>
 <h4 class="author">Liz Hughes and Edward Wallace</h4>
-<h4 class="date">03/01/2022</h4>
+<h4 class="date">05/01/2022</h4>
 
 </div>
 
@@ -410,7 +410,14 @@ volcano_RPMI4h_vsGAT201</code></pre>
 
 readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %&gt;%
                    mutate_if(is.numeric, signif, digits = 5),
-                 file = &quot;../results/DEGdf_RPMI4h_vsGAT201downp2x_FDR5.txt&quot;)</code></pre>
+                 file = &quot;../results/DEGdf_RPMI4h_vsGAT201_down2x_FDR5.txt&quot;)</code></pre>
+<pre class="r"><code>writeLines(text = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %&gt;%
+             pull(gene),
+           con = &quot;../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt&quot;)
+
+writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %&gt;%
+             pull(gene),
+           con = &quot;../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt&quot;)</code></pre>
 </div>
 <div id="reality-check-by-plotting-fold-change-for-a-couple-of-known-genes" class="section level2">
 <h2>Reality-check by plotting fold change for a couple of known genes</h2>
