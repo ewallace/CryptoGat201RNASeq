@@ -51,6 +51,7 @@ library(markdown)
 library(forcats)
 library(genefilter)
 library(ggrepel)
+library(ggdendro)
 
 
 theme_set(
@@ -143,6 +144,36 @@ dds_all
 resultsNames(dds_all)
 ```
 
+## Check distribution of counts and baseMean
+
+```{r count_distribution}
+count_stats_bygene <- 
+  counts_all %>%
+  as.matrix() %>%
+  tibble(gene = rownames(.),
+         count_min = rowMins(.),
+         count_mean = rowMeans(.),
+         count_max = rowMaxs(.)) %>%
+  select( - ".") # removes pipe behaviour leading to inclusion of "."
+
+genelist_mincount_10 <- 
+  count_stats_bygene %>%
+  filter(count_min >= 10) %>%
+  pull(gene)
+
+ggplot(data = count_stats_bygene) +
+  geom_density(aes(x=count_min + 1, colour = "min"), 
+               size = 1, kernel = "rectangular") +
+  geom_density(aes(x=count_max + 1, colour = "max"), 
+               size = 1, kernel = "rectangular") +
+  geom_density(aes(x=count_mean + 1, colour = "mean"), 
+               size = 1, kernel = "rectangular") +
+  scale_colour_manual(values = c("min" = "lightblue",
+                                 "mean" = "grey20",
+                                 "max" = "pink")) + 
+  scale_x_log10("log10(count per gene + 1)")
+```
+
 
 ## Select GAT201-dependent log2FC at each timepoint
 
@@ -158,13 +189,17 @@ deseq_df_GCT <-
   group_by(gene) %>%
   mutate(log2FC = log2estimate - mean(log2estimate)) %>%
   ungroup()
-  
+
+# restrict to genes with mincount 10
+deseq_df_GCT_mincount_10 <- 
+  deseq_df_GCT %>%
+  filter(gene %in% genelist_mincount_10)
 
 # check we retained all the levels
 unique(deseq_df_GCT$GCT)
 ```
 
-## Sanity-check: Did we get the log2FC right fora  favourite gene?
+## Sanity-check: Did we get the log2FC right for a favourite gene?
 
 ```{r print_log2FC_6917}
 deseq_df_GCT %>%
@@ -181,10 +216,10 @@ ggplot(data = deseq_df_GCT %>%
         panel.grid.major = element_blank(),
         axis.line = element_blank())
 ```
-## Plot log2FC for all genes, with no clustering
+## Plot log2FC for genes with mincount 10, with no clustering
 
-```{r plot_log2FC_all}
-ggplot(data = deseq_df_GCT,
+```{r plot_log2FC_m10}
+ggplot(data = deseq_df_GCT_mincount_10,
   aes(x = GCT, fill = log2FC, y = gene)) +
   geom_tile() +
   scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow",
@@ -194,33 +229,95 @@ ggplot(data = deseq_df_GCT,
         axis.line = element_blank(),
         axis.text.y = element_blank(), axis.ticks.y = element_blank())
 ```
+
 ## Calculate gene expression hierarchical clusters
 
-This does not run properly, perhaps because there are NA/NaN/Inf values?
+Here we restrict to genes with at least 10 counts in each sample.
+This list was calculated earlier as `genelist_mincount_10`. 
 
-It does run if we restrict to a subset with `head()`.
+This avoids a problem with numeric errors in calculations for all enes, that probably came from genes with low/zero counts.
 
-```{r hclust_genes, eval = FALSE}
-log2FC_GCT_wide <-
-  deseq_df_GCT %>%
+```{r hclust_genes}
+log2FC_GCT_m10_wide <-
+  deseq_df_GCT_mincount_10  %>%
   select(gene,GCT, log2FC) %>%
   pivot_wider(id_cols = gene, names_from = GCT, values_from = log2FC) %>%
   select(c("gene", GCT_levels))
 
 hclust_log2FC <- 
-  log2FC_GCT_wide %>%
+  log2FC_GCT_m10_wide %>%
   set_rownames(.$gene) %>%
   select(-gene) %>%
-  head(n= 100) %>%
+  # head(n= 100) %>%
   dist() %>%
   hclust()
 ```
+## Plot clustering dendrogram by itself
+
+```{r plot_dendrogram_log2FC_m10}
+plot_dendrogram_log2FC_m10 <- 
+  ggdendrogram(hclust_log2FC,
+               rotate = TRUE,
+               labels = FALSE) + 
+  theme_void() +
+  scale_y_reverse() +
+  coord_flip(expand = c(0,0), clip = "off")
+plot_dendrogram_log2FC_m10
+```
+
+```{r plot_log2FC_m10_dorder}
+
+deseq_df_GCT_mincount_10_dorder <- 
+  deseq_df_GCT_mincount_10 %>%
+  mutate(gene_dorder = 
+           factor(gene,
+                  levels = log2FC_GCT_m10_wide$gene[hclust_log2FC$order],
+                  ordered = TRUE)
+         )
+
+plot_log2FC_m10_dorder <- 
+  ggplot(data = deseq_df_GCT_mincount_10_dorder,
+         aes(x = GCT, fill = log2FC, y = gene_dorder)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow",
+                       limits = c(-3.5, 3.5), oob = scales::squish) +
+  coord_cartesian(expand = c(0,0), clip = "off") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.1),
+        panel.grid.major = element_blank(),
+        axis.line = element_blank(),
+        axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+  labs(x = "GAT201, Media, Time",
+       y = "Gene, ordered by clustering")
+
+plot_log2FC_m10_dorder
+```
+
+# Combined plot of dendrogram and heatmap
+
+```{r combine_dendrogram_heatmap, fig.height = 5, fig.width = 5}
+plot_dh_nolegend <- 
+  plot_grid(plot_dendrogram_log2FC_m10,
+          plot_log2FC_m10_dorder +
+            theme(axis.title.y = element_blank(),
+                  legend.position = "none"),
+          ncol = 2,
+          align = "h",
+          rel_widths = c(1,5))
+
+plot_grid(plot_dh_nolegend,
+          get_legend(plot_log2FC_m10_dorder + 
+                       theme(legend.box.margin = margin(0, 0, 0, 2))),
+          ncol = 2,
+          rel_widths = c(7,1))
+
+ggsave(filename = "../results/clustered_heatmap_GAT201ConditionTime.png", width = 6, height = 6)
+```
+
+
 
 # TO DO
 
-- Check where the zero values are in the dataset
-- Filter for higher-expressed genes if needed?
-- Debug the calls to dist() and hclust() on larger dataset
-- Include gene order from `hclust_log2FC` alongside `deseq_df_GCT`
-- Plot the heatmap with the clustered gene order
-- If possible, plot the dendrogram alongside the heatmap
+- Write figure legend/caption.
+- Improve the plot
+  - Make nicer labels for time etc.
+  - Clearly separate WT and ∆gat201 panels?
