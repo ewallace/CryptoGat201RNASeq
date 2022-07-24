@@ -1,0 +1,118 @@
+---
+title: "Gat201_deseqanalysis_3_20210819"
+author: "Liz Hughes"
+date: "19/08/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# GAT201 RNA Seq analysis_EHughes
+
+To carry out RNA-Seq I will use the Lexogen Quant Seq 3' mRNA-Seq library prep kit FWD. This is designed to generate illumina compatible libraries of sequences close to the 3' end of polyA RNA.
+
+Work flow: Reverse transcription ⇒ Removal of RNA ⇒ Second strand synthesis ⇒ Library amplification ⇒ Sequencing
+
+4 strains: KN99a, KN99 alpha, Gat201 deletion from the Madhani deletion collection (003) and Gat201 disruption from the Bahn collection (004).
+
+2 conditions: RPMI and RPMI+Serum (10%).
+
+2 BioReps for each strain.
+
+A single colony was grown in YPD, 30 degrees, 200rpm for 5 days.
+
+3.5 ml was transferred to 100ml fresh RPMI or RPMI+10% Serum and incubated at 37 degrees, 60rpm.
+
+2ml samples were taken from each rep at time 0hrs, fix and freeze and put at -80 degrees.
+
+At 30 mins, 2hrs and 4hrs 15 ml samples were collected, fix and freeze and put at -80 degrees.
+
+# Load packages used for analysis
+```{r Load packages used for analysis, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+# Define colours for specific samples
+
+```{r define colours}
+WTup_colour   = "orange"
+WTdown_colour = "darkgreen"
+Gat201up_colour  = "green"
+Gat201down_colour = "purple"
+```
+
+
+# Load count data and remove unwanted parts of column names
+
+```{r load counts data}
+counts <- readr::read_tsv("~/Documents/GitHub/CryptoGat201RNASeq_draft/quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+```
+
+# Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+Connect sample names to informative data that generated the data.
+
+Extra steps to format for DESeq2. 
+
+Remove all samples not sequenced: 'dplyr::filter'
+
+Remove notes in column: 'dplyr::select'
+
+Set rownames to make format of table appropriate for DESeq: 'magrittr::set_rownames'
+
+```{r Load sample sheet}
+samplesheet <- readxl::read_excel("~/Documents/GitHub/CryptoGat201RNASeq_draft/input_experiment/Gat201_samplesheet.xlsx") %>%
+              magrittr::set_rownames(.$SampleID)%>%
+              dplyr::mutate(GAT201 = forcats::fct_collapse(Strain, Yes = c("a","A"), No = c("B","M")))
+```
+We now have all the ingredients to prepare our data object in a form that is suitable for analysis, namely:
+
+counts: a table with the read counts
+samplesheet: a table with information about the samples
+
+# Differential expression analysis 
+## WT (GAT201 = yes) 0h v Gat201 deletion (GAT201 = no)
+
+
+
+
+
+
+
