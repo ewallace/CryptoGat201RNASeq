@@ -1,0 +1,323 @@
+---
+title: "Serum does not affect gene expression much"
+author: "Liz Hughes and Edward Wallace"
+date: "12/01/2022"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Summary
+
+This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend on serum. This means that we treat the two WT strains as the same, and the two ∆gat201 strains as the same.
+
+This makes figure panels:
+
+- heatmap of log2FC for all (or most) genes, showing overall variability, strong dependence on time, weak dependence on serum.
+
+These will then be combined into a multipanel figure, planned as figure 3 of the manuscript.
+
+# Setup: load packages, load data, clean and prep data
+
+
+## Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(genefilter)
+library(ggrepel)
+library(ggdendro)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+## Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+```
+
+
+## Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+Here we choose how the Strain labels behave by manipulating the factors. This creates a new variable `GAT201` whose levels are `del` and `WT`.
+
+```{r load_sample_sheet}
+
+Condition_Time_levels <- c("Y_0", 
+                           "R_30", "R_120", "R_240",
+                           "RS_30", "RS_120", "RS_240")
+
+# GAT201_Condition_Time
+GCT_levels <- c("WT_Y_0", 
+                "WT_R_30", "WT_RS_30", 
+                "WT_R_120", "WT_RS_120", 
+                "WT_R_240", "WT_RS_240",
+                "del_Y_0", 
+                "del_R_30", "del_RS_30", 
+                "del_R_120", "del_RS_120", 
+                "del_R_240", "del_RS_240")
+
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "del" = c("B","M")) %>% 
+                    forcats::fct_relevel("del"),
+                  Timepoint = factor(Timepoint),
+                  Condition_Time = factor(
+                    paste(Condition, Time, sep = "_"),
+                    levels = Condition_Time_levels
+                  ),
+                  GCT = factor(
+                    paste(GAT201, Condition, Time, sep = "_"),
+                    levels = GCT_levels
+                  )
+    )
+
+```
+
+## Select counts
+
+```{r select_counts_all, warning = FALSE}
+
+counts_all <-
+      dplyr::select(counts, samplesheet$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid)
+
+```
+
+# Differential gene expression analysis with DESeq2
+
+## Run DESeq2 analysis dependent oncombination GAT201, Condition, and Time
+
+This first uses the matrix of counts and the samplesheet information table to construct the DESeq2 data object, then immediately runs the analysis.
+
+The design formula `~ GCT - 1` ensures that every combination of GAT201, Condition and Time has a coefficient, where we remove the intercept term by including `- 1`. Removing the intercept term means that we have a coefficient for the first value of GCT, i.e. `WT_Y_0`.
+
+```{r deseq_GAT201_Condition_Time}
+
+dds_all <- DESeqDataSetFromMatrix(
+    countData = counts_all,
+    colData = samplesheet,
+    design = ~ GCT - 1 ) %>%
+  DESeq()
+
+dds_all
+resultsNames(dds_all)
+```
+
+## Check distribution of counts and baseMean
+
+```{r count_distribution}
+count_stats_bygene <- 
+  counts_all %>%
+  as.matrix() %>%
+  tibble(gene = rownames(.),
+         count_min = rowMins(.),
+         count_mean = rowMeans(.),
+         count_max = rowMaxs(.)) %>%
+  select( - ".") # removes pipe behaviour leading to inclusion of "."
+
+genelist_mincount_10 <- 
+  count_stats_bygene %>%
+  filter(count_min >= 10) %>%
+  pull(gene)
+
+ggplot(data = count_stats_bygene) +
+  geom_density(aes(x=count_min + 1, colour = "min"), 
+               size = 1, kernel = "rectangular") +
+  geom_density(aes(x=count_max + 1, colour = "max"), 
+               size = 1, kernel = "rectangular") +
+  geom_density(aes(x=count_mean + 1, colour = "mean"), 
+               size = 1, kernel = "rectangular") +
+  scale_colour_manual(values = c("min" = "lightblue",
+                                 "mean" = "grey20",
+                                 "max" = "pink")) + 
+  scale_x_log10("log10(count per gene + 1)")
+```
+
+
+## Select GAT201-dependent log2FC at each timepoint
+
+```{r tidy_deseq_GCT}
+# Create a tidy data frame that contains only the GAT201-dependent log2FC
+# in a helpful format for plotting
+deseq_df_GCT <- 
+  biobroom::tidy.DESeqDataSet(dds_all) %>%
+  mutate(GCT = term %>%
+           stringr::str_remove("GCT") %>%
+           factor(levels = GCT_levels)) %>%
+  select(GCT, gene, baseMean, log2estimate = estimate) %>%
+  group_by(gene) %>%
+  mutate(log2FC = log2estimate - mean(log2estimate)) %>%
+  ungroup()
+
+# restrict to genes with mincount 10
+deseq_df_GCT_mincount_10 <- 
+  deseq_df_GCT %>%
+  filter(gene %in% genelist_mincount_10)
+
+# check we retained all the levels
+unique(deseq_df_GCT$GCT)
+```
+
+## Sanity-check: Did we get the log2FC right for a favourite gene?
+
+```{r print_log2FC_6917}
+deseq_df_GCT %>%
+  filter(gene == "CNAG_06917")
+```
+
+```{r plot_log2FC_6917}
+ggplot(data = deseq_df_GCT %>%
+  filter(gene %in% c("CNAG_00483", "CNAG_00121", "CNAG_06917", "CNAG_01551")),
+  aes(x = GCT, fill = log2FC, y = gene)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow") +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.1),
+        panel.grid.major = element_blank(),
+        axis.line = element_blank())
+```
+## Plot log2FC for genes with mincount 10, with no clustering
+
+```{r plot_log2FC_m10}
+ggplot(data = deseq_df_GCT_mincount_10,
+  aes(x = GCT, fill = log2FC, y = gene)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow",
+                       limits = c(-3.5, 3.5), oob = scales::squish) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.1),
+        panel.grid.major = element_blank(),
+        axis.line = element_blank(),
+        axis.text.y = element_blank(), axis.ticks.y = element_blank())
+```
+
+## Calculate gene expression hierarchical clusters
+
+Here we restrict to genes with at least 10 counts in each sample.
+This list was calculated earlier as `genelist_mincount_10`. 
+
+This avoids a problem with numeric errors in calculations for all enes, that probably came from genes with low/zero counts.
+
+```{r hclust_genes}
+log2FC_GCT_m10_wide <-
+  deseq_df_GCT_mincount_10  %>%
+  select(gene,GCT, log2FC) %>%
+  pivot_wider(id_cols = gene, names_from = GCT, values_from = log2FC) %>%
+  select(c("gene", GCT_levels))
+
+hclust_log2FC <- 
+  log2FC_GCT_m10_wide %>%
+  set_rownames(.$gene) %>%
+  select(-gene) %>%
+  # head(n= 100) %>%
+  dist() %>%
+  hclust()
+```
+## Plot clustering dendrogram by itself
+
+```{r plot_dendrogram_log2FC_m10}
+plot_dendrogram_log2FC_m10 <- 
+  ggdendrogram(hclust_log2FC,
+               rotate = TRUE,
+               labels = FALSE) + 
+  theme_void() +
+  scale_y_reverse() +
+  coord_flip(expand = c(0,0), clip = "off")
+plot_dendrogram_log2FC_m10
+```
+
+```{r plot_log2FC_m10_dorder}
+
+deseq_df_GCT_mincount_10_dorder <- 
+  deseq_df_GCT_mincount_10 %>%
+  mutate(gene_dorder = 
+           factor(gene,
+                  levels = log2FC_GCT_m10_wide$gene[hclust_log2FC$order],
+                  ordered = TRUE)
+         )
+
+plot_log2FC_m10_dorder <- 
+  ggplot(data = deseq_df_GCT_mincount_10_dorder,
+         aes(x = GCT, fill = log2FC, y = gene_dorder)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow",
+                       limits = c(-3.5, 3.5), oob = scales::squish) +
+  coord_cartesian(expand = c(0,0), clip = "off") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.1),
+        panel.grid.major = element_blank(),
+        axis.line = element_blank(),
+        axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+  labs(x = "GAT201, Media, Time",
+       y = "Gene, ordered by clustering")
+
+plot_log2FC_m10_dorder
+```
+
+# Combined plot of dendrogram and heatmap
+
+```{r combine_dendrogram_heatmap, fig.height = 5, fig.width = 5}
+plot_dh_nolegend <- 
+  plot_grid(plot_dendrogram_log2FC_m10,
+          plot_log2FC_m10_dorder +
+            theme(axis.title.y = element_blank(),
+                  legend.position = "none"),
+          ncol = 2,
+          align = "h",
+          rel_widths = c(1,5))
+
+plot_grid(plot_dh_nolegend,
+          get_legend(plot_log2FC_m10_dorder + 
+                       theme(legend.box.margin = margin(0, 0, 0, 2))),
+          ncol = 2,
+          rel_widths = c(7,1))
+
+ggsave(filename = "../results/clustered_heatmap_GAT201ConditionTime.png", width = 6, height = 6)
+```
+
+
+
+# TO DO
+
+- Write figure legend/caption.
+- Improve the plot
+  - Make nicer labels for time etc.
+  - Clearly separate WT and ∆gat201 panels?
