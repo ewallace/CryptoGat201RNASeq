@@ -47,7 +47,6 @@ library(DESeq2)
 library(pheatmap)
 library(RColorBrewer)
 library(magrittr)
-library(markdown)
 library(forcats)
 library(genefilter)
 library(ggrepel)
@@ -56,7 +55,8 @@ library(ggdendro)
 
 theme_set(
   theme_cowplot(font_size = 12) +
-    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5),
+          plot.margin = margin(0,0,0,0))
 )
 
 ```
@@ -175,7 +175,7 @@ ggplot(data = count_stats_bygene) +
 ```
 
 
-## Select GAT201-dependent log2FC at each timepoint
+## Select GCT-dependent log2FC at each timepoint
 
 ```{r tidy_deseq_GCT}
 # Create a tidy data frame that contains only the GAT201-dependent log2FC
@@ -264,6 +264,7 @@ plot_dendrogram_log2FC_m10 <-
   coord_flip(expand = c(0,0), clip = "off")
 plot_dendrogram_log2FC_m10
 ```
+## Plot the log2 fold-change in same order as clustering dendrogram
 
 ```{r plot_log2FC_m10_dorder}
 
@@ -292,21 +293,85 @@ plot_log2FC_m10_dorder <-
 plot_log2FC_m10_dorder
 ```
 
+## Make a nicer x-axis for sample labels
+
+This section programs up x-axis labels split up by GAT201, Time, Serum
+
+It's ugly code to get a pretty result.
+
+```{r nice_GCT_labels, fig.height = 1, fig.width = 5}
+GCT_df <- 
+  tibble(GCT = as_factor(GCT_levels),
+                 x = as.numeric(GCT)) %>%
+  separate(GCT,c("GAT201","Condition","Time"), remove = FALSE) %>%
+  mutate(Serum = factor(Condition, 
+                        levels = c("R","RS"),
+                        labels = c("−", "+")),
+         GAT201 = str_replace(GAT201, "del", "∆"))
+
+GCT_time_df <- GCT_df %>%
+  group_by(GAT201,Time) %>%
+  summarise(xmean = mean(x), xmin = min(x), xmax = max(x))
+
+GCT_GAT201_df <- GCT_df %>%
+  group_by(GAT201) %>%
+  summarise(xmean = mean(x), xmin = min(x), xmax = max(x))
+
+plot_nice_GCT_labels <- 
+  ggplot(data = GCT_df) +
+  geom_text(aes(x = x, label = Serum), y = 3) + 
+  geom_text(data = GCT_time_df, aes(x = xmean, label = Time), y = 2) + 
+  geom_segment(data = GCT_time_df, 
+               aes(x = xmin, xend = xmax), y = 2.5, yend = 2.5) +
+  geom_text(data = GCT_GAT201_df, aes(x = xmean, label = GAT201), y = 1) +
+  geom_segment(data = GCT_GAT201_df, 
+               aes(x = xmin, xend = xmax), y = 1.5, yend = 1.5) +
+  scale_y_continuous(limits = c(0.5,3.5),
+                     breaks = c(1,2,3),
+                     labels = c("GAT201", "Time (mins)", "Serum")) + 
+  scale_x_continuous(limits = c(0.5, max(GCT_df$x + 0.5))) + 
+  coord_cartesian(expand = c(0,0), clip = "off") + 
+  theme_nothing() + 
+  theme(axis.text.y = element_text())
+
+plot_nice_GCT_labels
+
+# the next bit plots the y-axis labels as their own ggplot, right-aligned
+# so that we can get everything to align nicely in the plot_grid later
+plot_nice_GCT_yaxis <- 
+  ggplot(data = tibble(y = c(1,2,3),
+                     label = c("GAT201", "Time min.", "Serum")),
+         aes(y=y, label = label)) +
+  geom_text(hjust = 1, x = 1) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0.5, 3.5),
+                  expand = c(0,0), clip = "off")  + 
+  theme_nothing() 
+```
+
+
 # Combined plot of dendrogram and heatmap
+
+This combines the previous plot panels into a single plot, showing the dendrogram aligned with the clustered heatmap, and with nice x-axis labels.
 
 ```{r combine_dendrogram_heatmap, fig.height = 5, fig.width = 5}
 plot_dh_nolegend <- 
   plot_grid(plot_dendrogram_log2FC_m10,
           plot_log2FC_m10_dorder +
             theme(axis.title.y = element_blank(),
+                  axis.title.x = element_blank(),
+                  axis.text.x = element_blank(),
+                  axis.ticks.x = element_blank(),
                   legend.position = "none"),
+          plot_nice_GCT_yaxis,
+          plot_nice_GCT_labels + theme(axis.text.y = element_blank()),
           ncol = 2,
-          align = "h",
-          rel_widths = c(1,5))
+          align = "hv",
+          rel_widths = c(1,5),
+          rel_heights = c(7,1))
 
 plot_grid(plot_dh_nolegend,
           get_legend(plot_log2FC_m10_dorder + 
-                       theme(legend.box.margin = margin(0, 0, 0, 2))),
+                       theme(legend.box.margin = margin(0, 0, 0, 5))),
           ncol = 2,
           rel_widths = c(7,1))
 
@@ -318,6 +383,3 @@ ggsave(filename = "../results/clustered_heatmap_GAT201ConditionTime.png", width 
 # TO DO
 
 - Write figure legend/caption.
-- Improve the plot
-  - Make nicer labels for time etc.
-  - Clearly separate WT and ∆gat201 panels?
