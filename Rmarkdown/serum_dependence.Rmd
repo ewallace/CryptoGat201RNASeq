@@ -660,6 +660,19 @@ write_DEGdflist(DEGdf_delGAT201_240_vsSerum_down2x_FDR5)
 
 ```
 
+## Notes on genes at 4h
+
+```{r print_DEGdf_delGAT201_240_vsSerum_down2x_FDR5}
+DEGdf_delGAT201_240_vsSerum_down2x_FDR5
+```
+
+- CNAG_00895, ZIP1 zinc transporter
+- CNAG_03398, ZIP2 zinc transporter
+- CNAG_03007, hypothetical protein
+- CNAG_02005, hypothetical protein
+- CNAG_03453, CipC-like antibiotic response protein
+
+
 # TO DO
 
 - Write figure legend/captions.

@@ -204,6 +204,7 @@ pre code {
 <li><a href="#select-serum-dependent-log2fc-at-each-timepoint">Select serum-dependent log2FC at each timepoint</a></li>
 <li><a href="#count-the-number-of-degs-up-and-down-at-each-condition-and-time">Count the number of DEGs up and down at each Condition and Time</a></li>
 <li><a href="#calculate-serum-dependent-deg-lists-for-both-strains-at-each-timepoint">Calculate serum-dependent DEG lists for both strains at each timepoint</a></li>
+<li><a href="#notes-on-genes-at-4h">Notes on genes at 4h</a></li>
 </ul></li>
 <li><a href="#to-do">TO DO</a></li>
 </ul>
@@ -785,6 +786,34 @@ DEGdf_delGAT201_240_vsSerum_down2x_FDR5 &lt;-
   dplyr::arrange(log2FC)
 
 write_DEGdflist(DEGdf_delGAT201_240_vsSerum_down2x_FDR5)</code></pre>
+</div>
+<div id="notes-on-genes-at-4h" class="section level2">
+<h2>Notes on genes at 4h</h2>
+<pre class="r"><code>DEGdf_delGAT201_240_vsSerum_down2x_FDR5</code></pre>
+<pre><code>## # A tibble: 14 × 5
+##    gene       baseMean log2FC stderror     padj
+##    &lt;chr&gt;         &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+##  1 CNAG_02005     49.2  -2.44    0.337 6.27e-10
+##  2 CNAG_00979  20403.   -2.32    0.299 2.81e-11
+##  3 CNAG_00895   3287.   -1.95    0.226 4.29e-14
+##  4 CNAG_04877     95.5  -1.83    0.540 1.92e- 2
+##  5 CNAG_03398    358.   -1.78    0.296 1.17e- 6
+##  6 CNAG_07334   5875.   -1.62    0.221 4.73e-10
+##  7 CNAG_02775  29986.   -1.57    0.230 7.39e- 9
+##  8 CNAG_05392    284.   -1.41    0.194 5.75e-10
+##  9 CNAG_03007     96.9  -1.38    0.271 6.79e- 5
+## 10 CNAG_02225     72.6  -1.25    0.317 4.17e- 3
+## 11 CNAG_05867    969.   -1.21    0.244 1.05e- 4
+## 12 CNAG_00537     83.5  -1.12    0.326 1.74e- 2
+## 13 CNAG_04857     45.1  -1.09    0.332 2.41e- 2
+## 14 CNAG_02008    557.   -1.05    0.242 1.29e- 3</code></pre>
+<ul>
+<li>CNAG_00895, ZIP1 zinc transporter</li>
+<li>CNAG_03398, ZIP2 zinc transporter</li>
+<li>CNAG_03007, hypothetical protein</li>
+<li>CNAG_02005, hypothetical protein</li>
+<li>CNAG_03453, CipC-like antibiotic response protein</li>
+</ul>
 </div>
 </div>
 <div id="to-do" class="section level1">
