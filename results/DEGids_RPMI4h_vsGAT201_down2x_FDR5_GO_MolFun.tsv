@@ -1,0 +1,35 @@
+ID	Name	Bgd count	Result count	Result gene list	Pct of bgd	Fold enrichment	Odds ratio	P-value	Benjamini	Bonferroni
+GO:0052591	sn-glycerol-3-phosphate:ubiquinone-8 oxidoreductase activity	2	2	CNAG_02814,CNAG_02815,	100.0	36.05	inf	0.000764226417139	0.0370649812312	0.148259924925
+GO:0004368	glycerol-3-phosphate dehydrogenase (quinone) activity	2	2	CNAG_02814,CNAG_02815,	100.0	36.05	inf	0.000764226417139	0.0370649812312	0.148259924925
+GO:0016901	oxidoreductase activity, acting on the CH-OH group of donors, quinone or similar compound as acceptor	2	2	CNAG_02814,CNAG_02815,	100.0	36.05	inf	0.000764226417139	0.0370649812312	0.148259924925
+GO:0052590	sn-glycerol-3-phosphate:ubiquinone oxidoreductase activity	2	2	CNAG_02814,CNAG_02815,	100.0	36.05	inf	0.000764226417139	0.0370649812312	0.148259924925
+GO:0016861	intramolecular oxidoreductase activity, interconverting aldoses and ketoses	9	3	CNAG_02035,CNAG_04501,CNAG_04744,	33.3	12.02	17.88	0.00155287079666	0.0602513869105	0.301256934552
+GO:0045735	nutrient reservoir activity	3	2	CNAG_03082,CNAG_03083,	66.7	24.03	71.09	0.00225086111642	0.0727778427642	0.436667056585
+GO:0016860	intramolecular oxidoreductase activity	13	3	CNAG_02035,CNAG_04501,CNAG_04744,	23.1	8.32	10.72	0.00487301672162	0.118170655499	0.945365243995
+GO:0043021	ribonucleoprotein complex binding	13	3	CNAG_03624,CNAG_03975,CNAG_06318,	23.1	8.32	10.72	0.00487301672162	0.118170655499	0.945365243995
+GO:0016830	carbon-carbon lyase activity	27	4	CNAG_00834,CNAG_04501,CNAG_05260,CNAG_06770,	14.8	5.34	6.24	0.00606266690419	0.130684153268	1.0
+GO:0016831	carboxy-lyase activity	17	3	CNAG_00834,CNAG_04501,CNAG_05260,	17.6	6.36	7.65	0.0106832698987	0.173597413811	1.0
+GO:0016853	isomerase activity	71	6	CNAG_00827,CNAG_01539,CNAG_01623,CNAG_02035,CNAG_04501,CNAG_04744,	8.5	3.05	3.33	0.0133721209918	0.173597413811	1.0
+GO:0016782	transferase activity, transferring sulphur-containing groups	8	2	CNAG_02011,CNAG_05031,	25.0	9.01	11.84	0.0191724472606	0.173597413811	1.0
+GO:0003871	5-methyltetrahydropteroyltriglutamate-homocysteine S-methyltransferase activity	1	1	CNAG_01890,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004412	homoserine dehydrogenase activity	1	1	CNAG_04776,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0003844	1,4-alpha-glucan branching enzyme activity	1	1	CNAG_00393,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0008418	protein-N-terminal asparagine amidohydrolase activity	1	1	CNAG_02006,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0008260	3-oxoacid CoA-transferase activity	1	1	CNAG_05031,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004640	phosphoribosylanthranilate isomerase activity	1	1	CNAG_04501,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004351	glutamate decarboxylase activity	1	1	CNAG_05260,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004807	triose-phosphate isomerase activity	1	1	CNAG_02035,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004512	inositol-3-phosphate synthase activity	1	1	CNAG_01539,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0019825	oxygen binding	1	1	CNAG_01464,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0016708	oxidoreductase activity, acting on paired donors, with incorporation or reduction of molecular oxygen, NAD(P)H as one donor, and incorporation of two atoms of oxygen into one donor	1	1	CNAG_01464,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0008941	nitric oxide dioxygenase activity	1	1	CNAG_01464,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004425	indole-3-glycerol-phosphate synthase activity	1	1	CNAG_04501,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0004062	aryl sulfotransferase activity	1	1	CNAG_02011,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0070773	protein-N-terminal glutamine amidohydrolase activity	1	1	CNAG_02006,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0042085	5-methyltetrahydropteroyltri-L-glutamate-dependent methyltransferase activity	1	1	CNAG_01890,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0008824	cyanate hydratase activity	1	1	CNAG_01348,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0102752	1,4-alpha-glucan branching enzyme activity (using a glucosylated glycogenin as primer for glycogen synthesis)	1	1	CNAG_00393,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0008146	sulfotransferase activity	1	1	CNAG_02011,	100.0	36.05	inf	0.0277397929285	0.173597413811	1.0
+GO:0044877	protein-containing complex binding	26	3	CNAG_03624,CNAG_03975,CNAG_06318,	11.5	4.16	4.65	0.0340874424102	0.206655119612	1.0
+GO:0051213	dioxygenase activity	28	3	CNAG_01464,CNAG_01500,CNAG_04978,	10.7	3.86	4.28	0.04127060735	0.241244993893	1.0
+GO:0016491	oxidoreductase activity	430	18	CNAG_01102,CNAG_01464,CNAG_01500,CNAG_01846,CNAG_02553,CNAG_02758,CNAG_02775,CNAG_02814,CNAG_02815,CNAG_02984,CNAG_03983,CNAG_04776,CNAG_04978,CNAG_06169,CNAG_06623,CNAG_06628,CNAG_07491,CNAG_07965,	4.2	1.51	1.61	0.0496642299475	0.241244993893	1.0
