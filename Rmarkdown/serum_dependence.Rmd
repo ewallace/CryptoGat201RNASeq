@@ -1,7 +1,7 @@
 ---
-title: "Serum does not affect gene expression much"
+title: "Serum is not the dominant driver of gene expression"
 author: "Liz Hughes and Edward Wallace"
-date: "12/01/2022"
+date: "2022-07-29"
 output:
   html_document:
     toc: yes
@@ -25,8 +25,37 @@ This document is an analysis of the Gat201 RNA-seq dataset, focusing on differen
 This makes figure panels:
 
 - heatmap of log2FC for all (or most) genes, showing overall variability, strong dependence on time, weak dependence on serum.
+- serum-dependent differential gene expression, counts per strain and timepoint
 
 These will then be combined into a multipanel figure, planned as figure 3 of the manuscript.
+
+This also outputs serum-dependent differential expressed data frames and genelists:
+
+- DEGdf_WT_30_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_WT_30_vsSerum_down2x_FDR5.txt
+- DEGdf_WT_30_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_WT_30_vsSerum_up2x_FDR5.txt
+- DEGdf_WT_120_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_WT_120_vsSerum_down2x_FDR5.txt
+- DEGdf_WT_120_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_WT_120_vsSerum_up2x_FDR5.txt
+- DEGdf_WT_240_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_WT_240_vsSerum_down2x_FDR5.txt
+- DEGdf_WT_240_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_WT_240_vsSerum_up2x_FDR5.txt
+- DEGdf_delGAT201_240_vsSerum_up2x_FDR5.txt
+- DEGdf_delGAT201_30_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_delGAT201_30_vsSerum_down2x_FDR5.txt
+- DEGdf_delGAT201_30_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_delGAT201_30_vsSerum_up2x_FDR5.txt
+- DEGdf_delGAT201_120_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_delGAT201_120_vsSerum_down2x_FDR5.txt
+- DEGdf_delGAT201_120_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_delGAT201_120_vsSerum_up2x_FDR5.txt
+- DEGdf_delGAT201_240_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_delGAT201_240_vsSerum_down2x_FDR5.txt
+- DEGdf_delGAT201_240_vsSerum_up2x_FDR5_ids.txt
+
 
 # Setup: load packages, load data, clean and prep data
 
@@ -34,7 +63,6 @@ These will then be combined into a multipanel figure, planned as figure 3 of the
 ## Load packages used for analysis
 
 ```{r load_packages, include=FALSE}
-
 library(tidyr)
 library(readr)
 library(dplyr)
@@ -47,7 +75,6 @@ library(DESeq2)
 library(pheatmap)
 library(RColorBrewer)
 library(magrittr)
-library(markdown)
 library(forcats)
 library(genefilter)
 library(ggrepel)
@@ -56,10 +83,31 @@ library(ggdendro)
 
 theme_set(
   theme_cowplot(font_size = 12) +
-    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5),
+          plot.margin = margin(0,0,0,0))
 )
 
 ```
+
+```{r, include = FALSE}
+write_DEGdflist <- function(DEGdf, datadir = "../results/", digits = 5,
+                            write_df = TRUE, write_list = TRUE) {
+  # get the name of DEG
+  DEGdfname <- deparse(substitute(DEGdf))
+  # Writes a DEG dataframe and genelist
+  if(write_df) {
+    readr::write_tsv(x = DEGdf %>%
+                       mutate_if(is.numeric, signif, digits = digits),
+                     file = paste0(datadir, DEGdfname, ".txt") )
+  }
+  if(write_list) {
+    writeLines(text = DEGdf %>%
+                 pull(gene),
+               con = paste0(datadir, DEGdfname, "_ids.txt") )
+  }
+}
+```
+
 
 
 ## Load count data and remove unwanted parts of column names
@@ -78,11 +126,22 @@ counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
 
 Here we choose how the Strain labels behave by manipulating the factors. This creates a new variable `GAT201` whose levels are `del` and `WT`.
 
+Similarly we create factors with the desired order for combinations of
+
+- `Condition_Time`
+- `GAT201_Time`
+- `GCT` short for `GAT201_Condition_Time`, so it groups four biological replicates together.
+
+
 ```{r load_sample_sheet}
 
 Condition_Time_levels <- c("Y_0", 
                            "R_30", "R_120", "R_240",
                            "RS_30", "RS_120", "RS_240")
+
+# GAT201_Time
+GAT201_Time_levels <- c("WT_0", "WT_30", "WT_120", "WT_240",
+                        "del_0", "del_30", "del_120", "del_240")
 
 # GAT201_Condition_Time
 GCT_levels <- c("WT_Y_0", 
@@ -102,9 +161,16 @@ samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx")
                                           "del" = c("B","M")) %>% 
                     forcats::fct_relevel("del"),
                   Timepoint = factor(Timepoint),
+                  Serum = forcats::fct_collapse(Condition, 
+                                          "Yes" = c("RS"), 
+                                          "No" = c("R")),
                   Condition_Time = factor(
                     paste(Condition, Time, sep = "_"),
                     levels = Condition_Time_levels
+                  ),
+                  GAT201_Time =  factor(
+                    paste(GAT201, Time, sep = "_"),
+                    levels = GAT201_Time_levels
                   ),
                   GCT = factor(
                     paste(GAT201, Condition, Time, sep = "_"),
@@ -124,9 +190,9 @@ counts_all <-
 
 ```
 
-# Differential gene expression analysis with DESeq2
+# Normalised gene expression analysis with DESeq2
 
-## Run DESeq2 analysis dependent oncombination GAT201, Condition, and Time
+## Run DESeq2 analysis dependent on combination of GAT201, Condition, and Time
 
 This first uses the matrix of counts and the samplesheet information table to construct the DESeq2 data object, then immediately runs the analysis.
 
@@ -175,7 +241,7 @@ ggplot(data = count_stats_bygene) +
 ```
 
 
-## Select GAT201-dependent log2FC at each timepoint
+## Select GCT-dependent log2FC at each timepoint
 
 ```{r tidy_deseq_GCT}
 # Create a tidy data frame that contains only the GAT201-dependent log2FC
@@ -216,6 +282,7 @@ ggplot(data = deseq_df_GCT %>%
         panel.grid.major = element_blank(),
         axis.line = element_blank())
 ```
+
 ## Plot log2FC for genes with mincount 10, with no clustering
 
 ```{r plot_log2FC_m10}
@@ -265,6 +332,8 @@ plot_dendrogram_log2FC_m10 <-
 plot_dendrogram_log2FC_m10
 ```
 
+## Plot the log2 fold-change in same order as clustering dendrogram
+
 ```{r plot_log2FC_m10_dorder}
 
 deseq_df_GCT_mincount_10_dorder <- 
@@ -292,21 +361,85 @@ plot_log2FC_m10_dorder <-
 plot_log2FC_m10_dorder
 ```
 
+## Make a nicer x-axis for sample labels
+
+This section programs up x-axis labels split up by GAT201, Time, Serum
+
+It's ugly code to get a pretty result.
+
+```{r nice_GCT_labels, fig.height = 1, fig.width = 5}
+GCT_df <- 
+  tibble(GCT = as_factor(GCT_levels),
+                 x = as.numeric(GCT)) %>%
+  separate(GCT,c("GAT201","Condition","Time"), remove = FALSE) %>%
+  mutate(Serum = factor(Condition, 
+                        levels = c("R","RS"),
+                        labels = c("−", "+")),
+         GAT201 = str_replace(GAT201, "del", "∆"))
+
+GCT_time_df <- GCT_df %>%
+  group_by(GAT201,Time) %>%
+  summarise(xmean = mean(x), xmin = min(x), xmax = max(x))
+
+GCT_GAT201_df <- GCT_df %>%
+  group_by(GAT201) %>%
+  summarise(xmean = mean(x), xmin = min(x), xmax = max(x))
+
+plot_nice_GCT_labels <- 
+  ggplot(data = GCT_df) +
+  geom_text(aes(x = x, label = Serum), y = 3) + 
+  geom_text(data = GCT_time_df, aes(x = xmean, label = Time), y = 2) + 
+  geom_segment(data = GCT_time_df, 
+               aes(x = xmin, xend = xmax), y = 2.5, yend = 2.5) +
+  geom_text(data = GCT_GAT201_df, aes(x = xmean, label = GAT201), y = 1) +
+  geom_segment(data = GCT_GAT201_df, 
+               aes(x = xmin, xend = xmax), y = 1.5, yend = 1.5) +
+  scale_y_continuous(limits = c(0.5,3.5),
+                     breaks = c(1,2,3),
+                     labels = c("GAT201", "Time (mins)", "Serum")) + 
+  scale_x_continuous(limits = c(0.5, max(GCT_df$x + 0.5))) + 
+  coord_cartesian(expand = c(0,0), clip = "off") + 
+  theme_nothing() + 
+  theme(axis.text.y = element_text())
+
+plot_nice_GCT_labels
+
+# the next bit plots the y-axis labels as their own ggplot, right-aligned
+# so that we can get everything to align nicely in the plot_grid later
+plot_nice_GCT_yaxis <- 
+  ggplot(data = tibble(y = c(1,2,3),
+                     label = c("GAT201", "Time min.", "Serum")),
+         aes(y=y, label = label)) +
+  geom_text(hjust = 1, x = 1) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0.5, 3.5),
+                  expand = c(0,0), clip = "off")  + 
+  theme_nothing() 
+```
+
+
 # Combined plot of dendrogram and heatmap
+
+This combines the previous plot panels into a single plot, showing the dendrogram aligned with the clustered heatmap, and with nice x-axis labels.
 
 ```{r combine_dendrogram_heatmap, fig.height = 5, fig.width = 5}
 plot_dh_nolegend <- 
   plot_grid(plot_dendrogram_log2FC_m10,
           plot_log2FC_m10_dorder +
             theme(axis.title.y = element_blank(),
+                  axis.title.x = element_blank(),
+                  axis.text.x = element_blank(),
+                  axis.ticks.x = element_blank(),
                   legend.position = "none"),
+          plot_nice_GCT_yaxis,
+          plot_nice_GCT_labels + theme(axis.text.y = element_blank()),
           ncol = 2,
-          align = "h",
-          rel_widths = c(1,5))
+          align = "hv",
+          rel_widths = c(1,5),
+          rel_heights = c(7,1))
 
 plot_grid(plot_dh_nolegend,
           get_legend(plot_log2FC_m10_dorder + 
-                       theme(legend.box.margin = margin(0, 0, 0, 2))),
+                       theme(legend.box.margin = margin(0, 0, 0, 5))),
           ncol = 2,
           rel_widths = c(7,1))
 
@@ -314,10 +447,232 @@ ggsave(filename = "../results/clustered_heatmap_GAT201ConditionTime.png", width 
 ```
 
 
+# Serum-dependent gene expression analysis with DESeq2
+
+## Run DESeq2 analysis dependent on Condition/Time and GAT201
+
+This first uses the matrix of counts and the samplesheet information table to construct the DESeq2 data object, then immediately runs the analysis.
+
+The design formula `~ Condition_Time + GAT201:Condition_Time - 1` ensures that every combination of Condition and Time has a coefficient, where we remove the intercept term by including `- 1`. Then the interaction term `GAT201:Condition_Time` gives the effect of `GAT201` separately at each combination of Condition and Time, which we are interested in.
+
+```{r deseq_serum}
+
+samplesheet_RPMIboth <- 
+  dplyr::filter(samplesheet, Time > 0)
+
+counts_RPMIboth <-
+      dplyr::select(counts, samplesheet_RPMIboth$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid)
+
+dds_serum <- DESeqDataSetFromMatrix(
+    countData = counts_RPMIboth,
+    colData = samplesheet_RPMIboth,
+    design = ~ GAT201_Time + Serum:GAT201_Time - 1 ) %>%
+  DESeq()
+
+dds_serum
+resultsNames(dds_serum)
+```
+
+## Select serum-dependent log2FC at each timepoint
+
+```{r tidy_deseq_serum}
+coefnames_serum <- c("GAT201_TimeWT_30.SerumYes", "GAT201_TimeWT_120.SerumYes",
+                      "GAT201_TimeWT_240.SerumYes",  
+                      "GAT201_Timedel_30.SerumYes", "GAT201_Timedel_120.SerumYes",
+                      "GAT201_Timedel_240.SerumYes")
+
+# Create a tidy data frame that contains only the GAT201-dependent log2FC
+# in a helpful format for plotting
+deseq_df_GT_vsserum <- 
+  biobroom::tidy.DESeqDataSet(dds_serum) %>%
+  dplyr::filter(term %in% coefnames_serum) %>%
+  mutate(GAT201_Time = term %>%
+           stringr::str_remove("GAT201_Time") %>%
+           stringr::str_remove(".SerumYes") %>%
+           factor(levels = GAT201_Time_levels)) %>%
+  select(GAT201_Time, gene, baseMean, log2FC = estimate, stderror, padj = p.adjusted)
+
+# check we retained all the levels
+unique(deseq_df_GT_vsserum$GAT201_Time)
+```
+
+## Count the number of DEGs up and down at each Condition and Time
+
+```{r countDEGs_GT_vsserum, fig.width = 6, fig.height = 3}
+countDEGs_GT_vsserum <- 
+  deseq_df_GT_vsserum %>%
+  group_by(GAT201_Time) %>%
+  summarise(Up   = sum(log2FC > 1  & padj < 0.05, na.rm = TRUE),
+            Down = sum(log2FC < -1 & padj < 0.05, na.rm = TRUE))
+
+## prototype plot; not run but included as an example.
+# ggplot(data = countDEGs_CT_vsGAT201,
+#        aes(x = GAT201_Time)) +
+#   geom_col(aes(y = Up))
+
+countDEGs_GT_vsserum_long <- 
+  countDEGs_GT_vsserum %>%
+  pivot_longer(cols = c(Up,Down),
+               names_to = "Direction",
+               values_to = "DEG_count")
+
+barplot_countDEGs_GT_vsserum <-
+  ggplot(data = countDEGs_GT_vsserum_long,
+         aes(x = GAT201_Time, y = DEG_count, fill = Direction)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual("Serum vs no Serum\nin RPMI",
+                    values = c("Down" = "darkred",
+                               "Up" = "darkblue")) +
+  scale_y_continuous("gene count\n2x DE, 5% FDR", expand = c(0,0)) +
+  theme(panel.grid.major.x = element_blank())
+
+barplot_countDEGs_GT_vsserum
+```
+
+
+## Calculate serum-dependent DEG lists for both strains at each timepoint
+
+Write output to tab-separated txt files, in order of log2 fold-change as calculated above.
+Both as DEG dfs including log2 fold-change and p-values, also as lists of gene Ids only.
+
+
+First for wild-type cells
+
+```{r DEGs_vsSerum_WT}
+DEGdf_WT_30_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_30",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_WT_30_vsSerum_up2x_FDR5)
+
+DEGdf_WT_30_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_30",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_WT_30_vsSerum_down2x_FDR5)
+
+
+DEGdf_WT_120_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_120",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_WT_120_vsSerum_up2x_FDR5)
+
+DEGdf_WT_120_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_120",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_WT_120_vsSerum_down2x_FDR5)
+
+
+DEGdf_WT_240_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_240",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_WT_240_vsSerum_up2x_FDR5)
+
+DEGdf_WT_240_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_240",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_WT_240_vsSerum_down2x_FDR5)
+
+```
+
+Then for deltaGAT201 cells
+
+```{r DEGs_vsSerum_delGAT201}
+
+DEGdf_delGAT201_30_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_30",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_delGAT201_30_vsSerum_up2x_FDR5)
+
+DEGdf_delGAT201_30_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_30",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_delGAT201_30_vsSerum_down2x_FDR5)
+
+
+DEGdf_delGAT201_120_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_120",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_delGAT201_120_vsSerum_up2x_FDR5)
+
+DEGdf_delGAT201_120_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_120",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_delGAT201_120_vsSerum_down2x_FDR5)
+
+
+DEGdf_delGAT201_240_vsSerum_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_240",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(desc(log2FC))
+
+write_DEGdflist(DEGdf_delGAT201_240_vsSerum_up2x_FDR5)
+
+DEGdf_delGAT201_240_vsSerum_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_240",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::select(-GAT201_Time) %>%
+  dplyr::arrange(log2FC)
+
+write_DEGdflist(DEGdf_delGAT201_240_vsSerum_down2x_FDR5)
+
+```
+
+## Notes on genes at 4h
+
+```{r print_DEGdf_delGAT201_240_vsSerum_down2x_FDR5}
+DEGdf_delGAT201_240_vsSerum_down2x_FDR5
+```
+
+- CNAG_00895, ZIP1 zinc transporter
+- CNAG_03398, ZIP2 zinc transporter
+- CNAG_03007, hypothetical protein
+- CNAG_02005, hypothetical protein
+- CNAG_03453, CipC-like antibiotic response protein
+
 
 # TO DO
 
-- Write figure legend/caption.
-- Improve the plot
-  - Make nicer labels for time etc.
-  - Clearly separate WT and ∆gat201 panels?
+- Write figure legend/captions.
