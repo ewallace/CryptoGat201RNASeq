@@ -1,0 +1,74 @@
+---
+title: "DEseq analysis of Gat201-dependent gene expression"
+author: "Liz Hughes and Edward Wallace"
+date: "05/01/2022"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
+```
+
+# Summary
+
+This document loads counts per gene per sample taken from featurecounts in the file `/quantseqfwd_EH_050221/counts.txt`, and outputs them to another file with samples having nice names and in the expected order, `/results/counts_all.txt`.
+
+# Setup: load packages, load data, clean and prep data
+
+
+## Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+
+cols_gff <- c("Geneid", "Chr", "Start", "End", "Strand", "Length")
+```
+
+
+## Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+```
+
+
+## Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+Here we choose how the Strain labels behave by manipulating the factors. This creates a new variable `GAT201` whose levels are `del` and `WT`.
+
+```{r load_sample_sheet}
+Condition_Time_levels <- c("Y_0", 
+                           "R_30", "R_120", "R_240",
+                           "RS_30", "RS_120", "RS_240") 
+
+samplesheet <- readr::read_tsv("../input_experiment/Gat201_samplesheet.txt")
+
+samplesheet
+```
+
+## Select counts
+
+```{r select_counts_all, warning = FALSE}
+
+cols_counts_ID    <- c(cols_gff, samplesheet$SampleID)
+cols_counts_Title <- c(cols_gff, samplesheet$Title)
+
+counts_all <-
+      dplyr::select(counts, all_of(cols_counts_ID)) %>%
+      magrittr::set_colnames(cols_counts_Title)
+
+counts_all
+
+write_tsv(counts_all, file = "../results/counts_all.txt")
+```
