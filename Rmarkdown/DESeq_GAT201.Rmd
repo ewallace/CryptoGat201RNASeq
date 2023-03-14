@@ -586,6 +586,37 @@ Similarly, almost all the Liv3 targets that are differentially regulated are als
 Collectively this argues that Gat201 is itself the major driver of differential gene expression on this timescale.
 
 
+## Output intersected genelists
+
+We recently showed that ∆gat204 also derepresses growth in RPMI, like ∆gat201. This suggests that there might be one or more shared targets of both GAT201 and GAT204 that contribute to the phenotype. Here we create and write out genelists:
+
+- DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt
+- DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt
+
+```{r intersect_DEGs_ChIP}
+DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP <-
+  dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
+  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)) %T>%
+  write_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt")
+
+DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
+  dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
+  intersect(dplyr::pull(ChIPtargets_Gat204, CNAG)) %>%
+  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)) %T>%
+  write_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt")
+
+DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIP <-
+  dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
+  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene)) %T>%
+  write_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIP.txt")
+
+DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
+  dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
+  intersect(dplyr::pull(ChIPtargets_Gat204, CNAG)) %>%
+  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene)) %T>%
+  write_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt")
+```
+
 
 # Draft Multipanel Figure
 
