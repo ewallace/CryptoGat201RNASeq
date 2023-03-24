@@ -44,11 +44,17 @@ library(markdown)
 library(forcats)
 library(genefilter)
 library(ggrepel)
-
+library(extrafont)
 
 theme_set(
-  theme_cowplot(font_size = 12) +
-    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+  theme_cowplot(font_size = 12, font_family = "Arial") + 
+    theme(strip.background = element_blank(),
+          # panel.border = 
+          #   element_rect(color = "grey90", 
+          #                fill = NA, 
+          #                linetype = 1, 
+          #                size = 1),
+          panel.grid.major = element_line(colour = "grey90", size = 0.5))
 )
 
 ```
@@ -173,7 +179,7 @@ ggplot(data = pcdf_rlog,
 
 # Plot PC1 vs PC2 prioritising Time and GAT201_serum
 
-```{r plot_PC12_fancy}
+```{r plot_PC12_fancy, fig.height=2, fig.width=4.25}
 plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
                              data = pcdf_rlog) {
   # Plots PCA with default settings to highlight:
@@ -188,8 +194,8 @@ plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
          aes(colour = factor(Time), 
              shape = GAT201_Serum)
   ) +
-    geom_vline(xintercept = 0) +
-    geom_hline(yintercept = 0) +
+    geom_vline(xintercept = 0, colour = "grey90", size = 0.5) +
+    geom_hline(yintercept = 0, colour = "grey90", size = 0.5) +
     geom_point(aes_string(x = xpc, y = ypc)) +
     scale_shape_manual("Strain, Serum",
                        guide = guide_legend(ncol= 2),
@@ -204,25 +210,41 @@ plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
     ) +
     scale_colour_manual("Time (mins.)",
                         values = c("0" = "grey20",
-                                   "30" = "darkblue",
-                                   "120" = "purple2",
-                                   "240" = "darkred")) +
+                                   "30" = "#8c96c6",
+                                   "120" = "#8856a7",
+                                   "240" = "#810f7c")) +
     theme(axis.line = element_blank(), 
           panel.grid.major = element_blank(),
           panel.border = element_rect(colour= "grey50", size = 0.5))
   
 }
 
-plot_PCA_Time_GC("PC1", "PC2")
+plot_PC12_fancy <- 
+  plot_PCA_Time_GC("PC1", "PC2")  +
+  labs(x = paste0("PC1, ", 
+                  round(propvar_rlog_df$prop_var[1] * 100),
+                  "% of var."),
+       y  = paste0("PC2, ", 
+                   round(propvar_rlog_df$prop_var[2] * 100),
+                   "% of var."))
+
+plot_PC12_fancy
 ```
+
 This plot shows that PC1 and PC2 are almost completely reporting on Time. Because PC1/2 collectively explain 80% of the variance, that establishes that Time is the biggest driver of variability.
+
+
+```{r save_PC12_fancy}
+ggsave("../results/PC12_plot_GAT201RNAseq.svg",
+       plot_PC12_fancy, height = 2, width = 4.25)
+```
 
 
 ## Make aligned plot of first 4 PCs
 
-This is a draft of a multi-panel plot that could be included in the paper. 
+This is a draft of a multi-panel plot that could be a supplementary figure. 
 
-```{r plot_PC1to4,fig.width = 7, fig.height = 7}
+```{r plot_PC1to4,fig.width = 7.5, fig.height = 7}
 # Create plot panels but without legends
 PC1vs2 <- plot_PCA_Time_GC("PC1", "PC2") + theme(legend.position = "none")
 PC1vs3 <- plot_PCA_Time_GC("PC1", "PC3") + theme(legend.position = "none")
@@ -246,6 +268,9 @@ plot_grid(PC1vs2, plot_percentvar_rlog, NULL,
           PC1vs4, PC2vs4, PC3vs4, 
           ncol = 3,
           align = "hv")
+
+ggsave("../results/PCmultipanel_plot_GAT201RNAseq.png",
+       plot_PC12_fancy, height = 7, width = 7.5)
 ```
 
 This plot shows that PC3 reports on Gat201 status,  vs WT. 
