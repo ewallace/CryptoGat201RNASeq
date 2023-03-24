@@ -79,11 +79,18 @@ library(forcats)
 library(genefilter)
 library(ggrepel)
 library(ggdendro)
-
+library(vegan)
+library(extrafont)
 
 theme_set(
-  theme_cowplot(font_size = 12) +
-    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5),
+  theme_cowplot(font_size = 12, font_family = "Arial") + 
+    theme(strip.background = element_blank(),
+          # panel.border = 
+          #   element_rect(color = "grey90", 
+          #                fill = NA, 
+          #                linetype = 1, 
+          #                size = 1),
+          panel.grid.major = element_line(colour = "grey90", size = 0.5),
           plot.margin = margin(0,0,0,0))
 )
 
@@ -311,13 +318,25 @@ log2FC_GCT_m10_wide <-
   pivot_wider(id_cols = gene, names_from = GCT, values_from = log2FC) %>%
   select(c("gene", GCT_levels))
 
+# order genes according to mean value at 0min, as far as clustering allows
+preferred_gene_ordering <- 
+  log2FC_GCT_m10_wide %>% 
+  dplyr::mutate(Y_0_mean = ( WT_Y_0 + del_Y_0 ) / 2 ) %>%
+  dplyr::pull(Y_0_mean)
+
+distcort <- function(x) {
+  as.dist(1 - cor(t(x)))
+}
+
 hclust_log2FC <- 
   log2FC_GCT_m10_wide %>%
-  set_rownames(.$gene) %>%
   select(-gene) %>%
+  as.matrix() %>%
+  set_rownames(log2FC_GCT_m10_wide$gene) %>%
   # head(n= 100) %>%
-  dist() %>%
-  hclust()
+  distcort() %>%
+  hclust(method = "average") %>%
+  reorder(wts = preferred_gene_ordering)
 ```
 ## Plot clustering dendrogram by itself
 
@@ -375,7 +394,9 @@ GCT_df <-
   mutate(Serum = factor(Condition, 
                         levels = c("R","RS"),
                         labels = c("−", "+")),
-         GAT201 = str_replace(GAT201, "del", "∆"))
+         GAT201 = GAT201 %>% 
+           str_replace("del", "gat201∆") %>% 
+           str_replace( "WT", "GAT201"))
 
 GCT_time_df <- GCT_df %>%
   group_by(GAT201,Time) %>%
@@ -396,7 +417,7 @@ plot_nice_GCT_labels <-
                aes(x = xmin, xend = xmax), y = 1.5, yend = 1.5) +
   scale_y_continuous(limits = c(0.5,3.5),
                      breaks = c(1,2,3),
-                     labels = c("GAT201", "Time (mins)", "Serum")) + 
+                     labels = c("Strain", "Time (mins)", "Serum")) + 
   scale_x_continuous(limits = c(0.5, max(GCT_df$x + 0.5))) + 
   coord_cartesian(expand = c(0,0), clip = "off") + 
   theme_nothing() + 
@@ -408,7 +429,7 @@ plot_nice_GCT_labels
 # so that we can get everything to align nicely in the plot_grid later
 plot_nice_GCT_yaxis <- 
   ggplot(data = tibble(y = c(1,2,3),
-                     label = c("GAT201", "Time min.", "Serum")),
+                     label = c("Strain", "Time", "Serum")),
          aes(y=y, label = label)) +
   geom_text(hjust = 1, x = 1) +
   coord_cartesian(xlim = c(0, 1), ylim = c(0.5, 3.5),
@@ -437,13 +458,17 @@ plot_dh_nolegend <-
           rel_widths = c(1,5),
           rel_heights = c(7,1))
 
-plot_grid(plot_dh_nolegend,
-          get_legend(plot_log2FC_m10_dorder + 
-                       theme(legend.box.margin = margin(0, 0, 0, 5))),
-          ncol = 2,
-          rel_widths = c(7,1))
+plot_grid(get_legend(plot_log2FC_m10_dorder + 
+                       labs(fill = "mRNA log2 fold-change") +
+                       theme(legend.box.margin = margin(0, 0, 0, 2, 
+                                                        unit = "cm"), 
+                             legend.position = "top")),
+          plot_dh_nolegend,
+          ncol = 1,
+          rel_heights = c(1,7))
 
-ggsave(filename = "../results/clustered_heatmap_GAT201ConditionTime.png", width = 6, height = 6)
+ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime.svg",
+       width = 5, height = 5)
 ```
 
 
@@ -666,6 +691,8 @@ write_DEGdflist(DEGdf_delGAT201_240_vsSerum_down2x_FDR5)
 DEGdf_delGAT201_240_vsSerum_down2x_FDR5
 ```
 
+- CNAG_00979, CTR4 Copper uptake transporter
+- CNAG_02775, BIM1 BCS (copper-starvation) inducible membrane protein
 - CNAG_00895, ZIP1 zinc transporter
 - CNAG_03398, ZIP2 zinc transporter
 - CNAG_03007, hypothetical protein
