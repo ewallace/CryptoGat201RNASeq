@@ -1,0 +1,178 @@
+---
+title: "Comparing Gat201-dependent and Rim101-dependent gene expression"
+author: "Edward Wallace"
+date: "2023-04-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Compare Gat201-dependent and Rim101-dependent gene expression.
+
+Using:
+
+- RIM101 DEGs in Dulbecco’s modified Eagle’s medium [DMEM] with 5% CO2 at 37°C from [O'Meara et al 2013](https://doi.org/10.1128/mBio.00522-12)
+- GAT201 DEGs also in DMEM with 5% CO2 at 37°C [Homer et al 2016](http://dx.doi.org/10.1016/j.chom.2016.05.001)
+- GAT201 DEGs at 4h in RPMI from this study.
+
+
+Overall, this finds by eyeballing the numbers that there is no evidence for enrichment of RIM101 targets in GAT201 targets or vice versa. This analysis is rough because the datasets are from 3 different studies and analysed in rather different ways. However, in the absence of evidence in favour of overlap from here or elsewhere it's a reasonable start.
+
+Also RIM101 is not in the GAT201-dependent list, and vice versa. 
+
+
+## Load data, RIM101 and GAT201 in DMEM
+
+```{r load_RIM101}
+RIM101_DEGs_DMEM <- 
+  readxl::read_excel("../data_external/OMeara2013_TableS3_Rim101_DEGs_mbo006121415st3.xlsx",
+                     col_names = c("gene", "lnFC", "Annotation","GO_function", "GO_process", "GO_component"), skip = 1)
+
+RIM101_DEGs_DMEM
+```
+
+```{r check_RIM101, eval = FALSE, include = FALSE}
+# Double-check that these data are filtered for DEGS 2x up or down
+ggplot(data = RIM101_DEGs_DMEM, aes(x = lnFC)) + 
+  geom_density(adjust = 0.5, kernel = "rectangular") + 
+  geom_vline(xintercept = c(-log(2), log(2)), colour = "blue")
+```
+
+
+```{r load_GAT201}
+GAT201_DEGs_DMEM <- 
+  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+                     sheet = "Gat201 RNA Data",
+                     col_names = c("gene", "log2FC_Rep1", "log2FC_Rep2","log2FC_mean", "ChIP_enrichment"),
+                     skip = 1)
+
+GAT201_DEGs_DMEM
+```
+
+```{r check_GAT201, eval = FALSE, include = FALSE}
+# Double-check that these data are now filtered
+ggplot(data = GAT201_DEGs_DMEM, aes(x = log2FC_mean)) + 
+  geom_density(adjust = 0.5, kernel = "rectangular") 
+```
+
+Confirm Gat201 isn't in the RIM101-DEG list and vice versa
+
+```{r check_directeffect}
+"CNAG_01551" %in% RIM101_DEGs_DMEM$gene
+
+"CNAG_05431" %in% dplyr::filter(GAT201_DEGs_DMEM, abs(log2FC_mean) > 1)$gene
+```
+
+## Compare RIM101 and GAT201 in DMEM
+
+```{r venn_RIM101_vs_GAT201_DMEM}
+vennplotdata <- 
+  list("RIM101_down" = RIM101_DEGs_DMEM  %>%
+         dplyr::filter(lnFC < 0 ) %>%
+         dplyr::pull(gene),
+         "RIM101_up" = RIM101_DEGs_DMEM  %>%
+         dplyr::filter(lnFC > 0 ) %>%
+         dplyr::pull(gene),
+       "GAT201_up" = GAT201_DEGs_DMEM  %>%
+         dplyr::filter(log2FC_mean > 1 ) %>%
+         dplyr::pull(gene),
+       "GAT201_down" = GAT201_DEGs_DMEM  %>%
+         dplyr::filter(log2FC_mean < -1 ) %>%
+         dplyr::pull(gene)
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_RIM101_vs_GAT201_DMEM <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata)) +
+  theme_void() +
+  # scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_RIM101_vs_GAT201_DMEM
+```
+
+Comparing these numbers with the total number of genes (7823 in the GAT201 list) - it's clear that there is no statistical enrichment for RIM101 DEGs in GAT201 DEGS or vice versa. No connection.
+
+
+## Compare GAT201 RPMI with GAT201 DMEM
+
+```{r load_GAT201_RPMI4h}
+GAT201_down_RPMI4h <- read_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt")
+GAT201_up_RPMI4h <- read_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt")
+```
+
+
+```{r venn_GAT201_RPMI_vs_GAT201_DMEM}
+vennplotdata <- 
+  list("down_RPMI" = GAT201_down_RPMI4h,
+       "up_RPMI" = GAT201_up_RPMI4h,
+       "up_DMEM" = GAT201_DEGs_DMEM  %>%
+         dplyr::filter(log2FC_mean > 1 ) %>%
+         dplyr::pull(gene),
+       "down_DMEM" = GAT201_DEGs_DMEM  %>%
+         dplyr::filter(log2FC_mean < -1 ) %>%
+         dplyr::pull(gene)
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_GAT201_RPMI_vs_GAT201_DMEM <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata)) +
+  theme_void() +
+  # scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_GAT201_RPMI_vs_GAT201_DMEM
+```
+
+This is reasonable. About half the Gat201-regulated genes in RPMI (FDR 5%, 2x enriched) are regulated in the same direction in DMEM (2x mean, no FDR control). 
+
+
+## Compare GAT201 RPMI with RIM101 DMEM
+
+```{r venn_GAT201_RPMI_vs_RIM101_DMEM}
+vennplotdata <- 
+  list("GAT201_RPMI_up" = GAT201_down_RPMI4h,
+       "GAT201_RPMI_down" = GAT201_up_RPMI4h,
+       "RIM101_DMEM_down" = RIM101_DEGs_DMEM  %>%
+         dplyr::filter(lnFC < 0 ) %>%
+         dplyr::pull(gene),
+       "RIM101_DMEM_up" = RIM101_DEGs_DMEM  %>%
+         dplyr::filter(lnFC > 0 ) %>%
+         dplyr::pull(gene)
+  ) %>%
+  RVenn::Venn() %>%
+  ggVennDiagram::process_data()
+
+venn_GAT201_RPMI_vs_RIM101_DMEM <- 
+  ggplot() +
+  geom_sf(aes(color = id), 
+          data = ggVennDiagram::venn_setedge(vennplotdata), show.legend = FALSE) +
+  geom_sf_text(aes(label = name), 
+               data = ggVennDiagram::venn_setlabel(vennplotdata)) +
+  geom_sf_text(aes(label = count), 
+               data = ggVennDiagram::venn_region(vennplotdata)) +
+  theme_void() +
+  # scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
+  coord_sf(clip = "off")
+
+venn_GAT201_RPMI_vs_RIM101_DMEM
+```
+
+Again, the overlap is low. I think it's low enough that it's a waste of time to do any statistical tests to look for more: no evidence for overlapping targets of GAT201 and RIM101.
