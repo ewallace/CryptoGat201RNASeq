@@ -1,7 +1,7 @@
 ---
 title: "Serum is not the dominant driver of gene expression"
 author: "Liz Hughes and Edward Wallace"
-date: "2022-07-29"
+date: "2023-04-24"
 output:
   html_document:
     toc: yes
@@ -477,12 +477,57 @@ ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime.svg",
        width = 5, height = 5)
 ```
 
+### Highlight select genes on y-axis.
+
+```{r highlight_select}
+
+select_genes <- c("CNAG_03012", "CNAG_06443", "CNAG_01551", "CNAG_06917", "CNAG_06125", "CNAG_06762", "CNAG_00979")
+
+select_genes_dorder <- 
+  tibble( gene = log2FC_GCT_m10_wide$gene,
+          gene_dorder = factor(log2FC_GCT_m10_wide$gene,
+                  levels = log2FC_GCT_m10_wide$gene[hclust_log2FC$order],
+                  ordered = TRUE),
+          y = as.integer(gene_dorder)) %>%
+  dplyr::filter( gene %in% select_genes )
+
+plot_select_genes_dorder <- 
+  ggplot(data = select_genes_dorder)  +
+  # geom_segment(colour = "grey50", 
+  #              x = 0, xend = 0,
+  #              y = 1, yend = nrow(log2FC_GCT_m10_wide)) +
+  geom_text(aes(y = y, label = gene),
+            x = 0, size = 2) +
+  coord_cartesian(xlim = c(-0.5,0.5), 
+                  ylim = c(1, nrow(log2FC_GCT_m10_wide)),
+                  expand = c(0,0), clip = "off") +
+  theme_nothing()
+  
+plot_grid(plot_dendrogram_log2FC_m10,
+          plot_log2FC_m10_dorder +
+            theme(axis.title.y = element_blank(),
+                  axis.title.x = element_blank(),
+                  axis.text.x = element_blank(),
+                  axis.ticks.x = element_blank(),
+                  legend.position = "none"),
+          plot_select_genes_dorder,
+          plot_nice_GCT_yaxis,
+          plot_nice_GCT_labels + theme(axis.text.y = element_blank()),
+          NULL,
+          ncol = 3,
+          align = "hv",
+          rel_widths = c(1,5,0.6),
+          rel_heights = c(7,1))
+
+ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime_plus.svg",
+       width = 5.5, height = 5)
+```
 
 
 ### Extract and plot clusters
 
 ```{r extract_cluster_functions}
-
+  
 make_clustered_df <- function(k = 2, 
                               names_df = log2FC_GCT_m10_wide,
                               hclust_results = hclust_log2FC) {
@@ -550,10 +595,10 @@ genecluster_CQS1 <- make_cluster_with_gene(gene = "CNAG_03012", k = 100)
 plot_genecluster_CQS1 <- plot_clustered_genelist(genecluster_CQS1)
 
 
-genecluster_SSA1_k100 <- make_cluster_with_gene(gene = "CNAG_06443", k = 100)
+genecluster_SSA1 <- make_cluster_with_gene(gene = "CNAG_06443", k = 100)
 
 genecluster_TEF1_k100 <- make_cluster_with_gene(gene = "CNAG_06125", k = 100)
-all.equal(genecluster_SSA1_k100,genecluster_TEF1_k100)
+all.equal(genecluster_SSA1,genecluster_TEF1_k100)
 
 genecluster_TEF1 <- make_cluster_with_gene(gene = "CNAG_06125", k = 500)
 genecluster_CTR4 <- make_cluster_with_gene(gene = "CNAG_00979", k = 500)
@@ -574,8 +619,7 @@ plot_genecluster_GAT201 <- plot_clustered_genelist(genecluster_GAT201)
 
 ```
 
-```{r collect_clusters, eval = FALSE}
-# FIX ME
+```{r collect_clusters}
 hclust_colour_df_grouped <-
   tibble(gene = log2FC_GCT_m10_wide$gene,
          gene_dorder =
@@ -585,7 +629,7 @@ hclust_colour_df_grouped <-
          y = as.integer(gene_dorder),
          cluster_select = fct_collapse(gene,
                                        CQS1   = genecluster_CQS1,
-                                       HSP    = genecluster_SSA1,
+                                       # HSP    = genecluster_SSA1,
                                        GAT201 = genecluster_GAT201,
                                        TSA3   = genecluster_TSA3,
                                        RPs    = genecluster_TEF1,
@@ -596,25 +640,25 @@ hclust_colour_df_grouped <-
   summarise(n = n(), ymin = min(y), ymax = max(y), ymean = mean(y))
 ```
 
-```{r plot_clusters, eval = FALSE}
+```{r plot_clusters}
 # FIX ME
 plot_cluster_select <- 
   ggplot(data = hclust_colour_df_grouped %>%
            dplyr::filter(!is.na(cluster_select))) +
   geom_rect(aes(ymin = ymin, ymax = ymax
-                #, fill = cluster_select
+                , fill = cluster_select
                 ),
-            fill = "grey50",
+            # fill = "grey50",
             xmin = -0.1, xmax = 0) +
-  # geom_text(aes(y = ymean, 
-  #               colour = cluster_select, 
-  #               label = cluster_select),
-  #           x = 0.1, hjust = 0) +
-  coord_cartesian(xlim = c(-0.1,0), 
+  geom_text(aes(y = ymean,
+                colour = cluster_select,
+                label = cluster_select),
+            x = 0.1, hjust = 0) +
+  coord_cartesian(xlim = c(-0.1,1), 
                   ylim = c(min(hclust_colour_df_grouped$ymin),
                            max(hclust_colour_df_grouped$ymax)),
                   expand = c(0,0), clip = "off") +
-  #scale_colour_brewer() + scale_fill_brewer() +
+  scale_colour_brewer(type = "qual") + scale_fill_brewer(type = "qual") +
   theme_nothing()
   
 plot_cluster_select
@@ -623,7 +667,7 @@ plot_cluster_select
 
 ## Plot example genes for main figure
 
-```{r plot_log2FC_line_faceted_5select, fig.height = 6, fig.width = 3}
+```{r plot_log2FC_line_faceted_6select, fig.height = 6, fig.width = 3}
 
 plot_mygenes_facet <- function(mygenes,
                                mygenenames, 
@@ -680,13 +724,18 @@ plot_mygenes_facet <- function(mygenes,
   return(plot_out)
 }
 
+# plot_mygenes_facet(
+#   mygenes =  c("CNAG_03012", "CNAG_06443", "CNAG_01551", "CNAG_06917", "CNAG_06125"),
+#   mygenenames = c("CQS1", "SSA1", "GAT201", "TSA3", "TEF1")
+# )
+
 plot_mygenes_facet(
-  mygenes =  c("CNAG_03012", "CNAG_06443", "CNAG_01551", "CNAG_06917", "CNAG_06125"),
-  mygenenames = c("CQS1", "SSA1", "GAT201", "TSA3", "TEF1")
+  mygenes =  c("CNAG_06917", "CNAG_03012", "CNAG_01551", "CNAG_06443", "CNAG_00979", "CNAG_06125"),
+  mygenenames = c("TSA3", "CQS1", "GAT201", "SSA1", "CTR4", "TEF1")
 )
 
-ggsave(filename = "../results/log2FC_line_multipanel_clusterselect.png",
-       width = 2.5, height = 5)
+ggsave(filename = "../results/log2FC_line_multipanel_6select.svg",
+       width = 2.5, height = 5.8)
 ```
 
 ```{r plot_log2FC_line_faceted_Gat201dep}
@@ -700,9 +749,9 @@ ggsave(filename = "../results/log2FC_line_multipanel_Gat201dep.png",
 ```
 
 
-```{r plot_log2FC_line_faceted_25genes, fig.height = 9, fig.width = 7.5}
+```{r plot_log2FC_line_faceted_30genes, fig.height = 9, fig.width = 7.5}
 
-my25genes <- read_tsv("../input_annotation/CryptoWakeup_25genes.txt")
+my25genes <- read_tsv("../input_annotation/CryptoWakeup_30genes.txt")
 
 plot_mygenes_facet(
   mygenes =  my25genes$GeneID,
@@ -710,8 +759,8 @@ plot_mygenes_facet(
   facet_option = "wrap_fixed"
 )
 
-ggsave(filename = "../results/log2FC_line_25genes.png",
-       width = 7.5, height = 9)
+ggsave(filename = "../results/log2FC_line_30genes.png",
+       width = 7.5, height = 9.5)
 ```
 
 
