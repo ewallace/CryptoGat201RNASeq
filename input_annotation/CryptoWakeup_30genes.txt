@@ -1,0 +1,31 @@
+GeneID	ProductDescription	GeneName
+CNAG_03012	quorum sensing-like molecule	CQS1
+CNAG_00483	actin	ACT1
+CNAG_06297	hypothetical protein	CNAG_06297
+CNAG_06125	elongation factor 1-alpha	TEF1
+CNAG_06443	glucose-regulated protein	SSA1
+CNAG_04969	UDP-glucose 6-dehydrogenase	UGD1
+CNAG_07554	capsular associated protein	CAP10
+CNAG_00721	alpha-1,3-mannosyltransferase	CAP59
+CNAG_00600	capsular associated protein	CAP60
+CNAG_02885	capsular associated protein	CAP64
+CNAG_01551	GATA family transcription factor	GAT201
+CNAG_06762	GATA transcription factor, capsule-independent antiphagocytic protein	GAT204
+CNAG_05835	wor1/pac2 family transcription factor	LIV3
+CNAG_01626	transcriptional adapter 2-alpha	ADA2
+CNAG_00239	hypothetical protein	YAP1
+CNAG_01562	pr4/barwin domain protein	BLP4
+CNAG_04874	hypothetical protein	CNAG_04874
+CNAG_03326	Chitin synthase	CHS2
+CNAG_02225	glucan 1,3-beta-glucosidase	EXG104
+CNAG_04735	extracellular elastinolytic metalloproteinase	MEP1
+CNAG_02775	BCS-inducible membrane protein	BIM1
+CNAG_02797	putative secreted protein	CPL1
+CNAG_00979	Copper uptake transporter	CTR4
+CNAG_06241	acidic laccase	CFO1
+CNAG_05431	pH-response transcription factor pacC/RIM101	RIM101
+CNAG_00883	Putative Zn2-Cys6 zinc-finger transcription factor	ECM2201
+CNAG_03894	Putative Zn2-Cys6 zinc-finger transcription factor	PDR802
+CNAG_07464	Mbp1 and Swi4-like APSES protein 1	MBS1
+CNAG_03346	bZip transcription factor, putative	BZP4
+CNAG_04090	activating transcription factor	ATF1
