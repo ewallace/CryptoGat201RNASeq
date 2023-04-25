@@ -1,0 +1,321 @@
+---
+title: "DEseq analysis of Gat201-dependent gene expression"
+author: "Edward Wallace"
+date: "2023-04-24"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+
+# Summary
+
+This document is an analysis of the Gat201 RNA-seq dataset, comparing only 0min with 2h RPMI + Serum for wild-type. The goal is to compare the differential gene expression in this dataset with matched conditions in the wakeup dataset, despite the very different RNA-seq protocols.
+
+
+# Setup: load packages, load data, clean and prep data
+
+
+## Load packages used for analysis
+
+```{r load_packages, include=FALSE}
+
+library(tidyr)
+library(readr)
+library(dplyr)
+library(readxl)
+library(stringr)
+library(ggplot2)
+library(cowplot)
+library(biobroom)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(magrittr)
+library(markdown)
+library(forcats)
+library(genefilter)
+library(ggrepel)
+
+
+theme_set(
+  theme_cowplot(font_size = 12) +
+    theme(panel.grid.major = element_line(colour = "grey80", size = 0.5))
+)
+
+```
+
+
+## Load count data and remove unwanted parts of column names
+
+```{r load_count_data}
+# note: we should insist that counts are loaded as integers
+# and check the other data types
+counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
+                   comment = "#") %>% 
+          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+
+```
+
+
+## Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+
+We pick the condition `RS_120`, RPMI + Serum at 2hrs, along with `Y_0`, YPD at 0mins.
+
+```{r load_sample_sheet}
+
+Condition_Time_levels <- c("Y_0", 
+                           "R_30", "R_120", "R_240",
+                           "RS_30", "RS_120", "RS_240") 
+
+samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+    magrittr::set_rownames(.$SampleID) %>%
+    dplyr::mutate(GAT201 = 
+                    forcats::fct_collapse(Strain, 
+                                          "WT" = c("a","A"), 
+                                          "del" = c("B","M")) %>% 
+                    forcats::fct_relevel("del"),
+                  Timepoint = factor(Timepoint),
+                  Condition_Time = factor(
+                    paste(Condition, Time, sep = "_"),
+                    levels = Condition_Time_levels
+                  )
+    )
+
+samplesheet_WTRS2h_vs_0min <- samplesheet %>%
+  dplyr::filter(Condition_Time %in% c("Y_0", "RS_120"), GAT201 == "WT")
+```
+
+## Load H99 Gene information
+
+```{r load_gene_info}
+gene_info_df <- 
+  here::here("input_annotation",
+             "H99_geneinfo_FungiDB59.txt") %>%
+  readr::read_tsv(comment = "#")  %>% 
+  dplyr::rename(gene = GeneID, geneName = GeneName)
+```
+
+# Differential gene expression analysis with DESEq2
+
+## Run DESeq2 analysis dependent on Condition/Time and GAT201
+
+This first uses the matrix of counts and the samplesheet information table to construct the DESeq2 data object, then immediately runs the analysis.
+
+
+```{r deseq_WTRS2h_vs_0min}
+
+dds_WTRS2h_vs_0min <- DESeqDataSetFromMatrix(
+    countData = dplyr::select(counts, samplesheet_WTRS2h_vs_0min$SampleID) %>%
+      magrittr::set_rownames(counts$Geneid),
+    colData = samplesheet_WTRS2h_vs_0min,
+    design = ~ Timepoint ) %>%
+  DESeq()
+
+dds_WTRS2h_vs_0min
+```
+
+
+```{r results_WTRS2h_vs_0min}
+results(dds_WTRS2h_vs_0min)
+
+resultsNames(dds_WTRS2h_vs_0min)
+```
+
+```{r deseq_df_WTRS2h_vs_0min}
+deseq_df_WTRS2h_vs_0min <- 
+  biobroom::tidy.DESeqDataSet(dds_WTRS2h_vs_0min) %>%
+  dplyr::filter(term == "Timepoint_120_vs_0") %>%
+  dplyr::left_join(gene_info_df,
+                   by = "gene") %>% 
+  dplyr::select(gene, 
+                geneName, 
+                baseMean, 
+                log2FC = estimate, 
+                stderror,
+                padj = p.adjusted)
+```
+
+## List DEGs most UP in RPMI+ vs YPD
+
+We cut off at 2x changes with 5% FDR here.
+
+
+```{r DEGs_RPMI_up, fig.width = 6, fig.height = 3}
+# Make data frames of DEGs up and down, arranged by log2FC
+DEGdf_RPMI_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_WTRS2h_vs_0min,
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::arrange(desc(log2FC))
+print(DEGdf_RPMI_up2x_FDR5, n = 20)
+```
+
+Print the top 20 *named* DEGs
+
+```{r DEGs_RPMI_up_named}
+DEGdf_RPMI_up2x_FDR5 %>%
+  dplyr::filter(!is.na(geneName)) %>%
+  print(n = 20)
+```
+
+## List DEGs most DOWN in RPMI+ vs YPD
+
+
+```{r DEGs_RPMI_down, fig.width = 6, fig.height = 3}
+# Make data frames of DEGs up and down, arranged by log2FC
+DEGdf_RPMI_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_WTRS2h_vs_0min,
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::arrange(log2FC)
+print(DEGdf_RPMI_down2x_FDR5, n = 20)
+```
+
+Print the top 20 *named* DEGs
+
+```{r DEGs_RPMI_down_named}
+DEGdf_RPMI_down2x_FDR5 %>%
+  dplyr::filter(!is.na(geneName)) %>%
+  print(n = 20)
+```
+
+## Volcano plot of DEGs
+
+```{r volcano_WTRS2h_vs_0min, fig.width = 6, fig.height = 3}
+volcano_WTRS2h_vs_0min <- 
+  ggplot(data = deseq_df_WTRS2h_vs_0min,
+         aes(x = log2FC, y = -log10(padj)) ) +
+  geom_point(size = 0.5, colour = "grey50") +
+  geom_point(data = DEGdf_RPMI_up2x_FDR5,
+             size = 1, colour = "darkblue") +
+  geom_point(data = DEGdf_RPMI_down2x_FDR5,
+             size = 1, colour = "darkred") +
+  scale_y_continuous("-log10(p)",
+                     limits = c(0,10), expand = c(0,0),
+                     oob=scales::squish) +
+  scale_x_continuous("log2 fold-change, RPMI+serum vs YPD, 37C 1hr",
+                     breaks = -5:5,
+                     limits = c(-4,4), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_cartesian(clip = "off") 
+volcano_WTRS2h_vs_0min
+```
+
+
+
+## Write outputs to files
+
+```{r write_DEGs}
+deseq_df_WTRS2h_vs_0min %>%
+  dplyr::mutate(
+    across(c(baseMean, log2FC, stderror), round, digits = 3)
+  ) %>%
+  dplyr::mutate(padj = signif(padj, digits = 4)) %>%
+  write_tsv(file = here::here("results",
+                              "deseq_df_WTRS2h_vs_0min.txt"))
+
+# DEGdf_RPMI_up2x_FDR5 %>%
+#   dplyr::pull(gene) %>%
+#   write_lines(file = here::here("results", "DEGs",
+#                             "deglist_WTRS2h_vs_0min_up2x_FDR5.txt"))
+# 
+# DEGdf_RPMI_down2x_FDR5 %>%
+#   dplyr::pull(gene) %>%
+#   write_lines(file = here::here("results", "DEGs",
+#                             "deglist_WTRS2h_vs_0min_down2x_FDR5.txt"))
+```
+
+## Compare differential expression in Gat201 dataset with Wakeup dataset
+
+```{r load_wakeup}
+deseqdf_wakeup <- 
+  read_tsv("../../CryptoWakeupRNASeq/results/DEGs/deseq_df_RPMI37C2hr_vs_0min.txt",
+           comment = "#")
+
+deseq_joined <- 
+  dplyr::inner_join(
+    deseqdf_wakeup,
+    deseq_df_WTRS2h_vs_0min,
+    by = c("gene", "geneName"),
+    suffix = c("_wakeup", "_Gat201")
+)
+
+ggplot(data = deseq_joined) + 
+  geom_density(aes(x = baseMean_wakeup, colour = "Wakeup"))  + 
+  geom_density(aes(x = baseMean_Gat201, colour = "Gat201")) +
+  scale_x_log10("baseMean")
+
+deseq_joined
+```
+
+Correlation is overall low:
+
+```{r calc_correlation}
+deseq_joined %>%
+  with(cor(log2FC_wakeup, log2FC_Gat201,
+      use = "pairwise.complete.obs"))
+```
+
+Correlation is still low if we filter for low-expressed genes by removing bottom 10% of baseMean:
+
+```{r calc_correlation_filtered_q25}
+cor_log2FC_q10filtered <- 
+  deseq_joined %>%
+  dplyr::filter(baseMean_wakeup > quantile(baseMean_wakeup, 0.1), 
+                baseMean_Gat201 > quantile(baseMean_wakeup, 0.1)) %>%
+  with(cor(log2FC_wakeup, log2FC_Gat201,
+           use = "pairwise.complete.obs"))
+
+cor_log2FC_q10filtered
+```
+
+Scatter plot for filtered data show that the dynamic range of Gat201 dataset is greater than the Wakeup dataset:
+
+```{r plot_scatter_filtered, fig.height = 5.4, fig.width = 5}
+plot_scatter_filtered <- 
+ggplot(data = deseq_joined %>%
+  dplyr::filter(baseMean_wakeup > quantile(baseMean_wakeup, 0.1), 
+                baseMean_Gat201 > quantile(baseMean_wakeup, 0.1)),
+       aes(x = log2FC_wakeup, y = log2FC_Gat201)) +
+  geom_vline(xintercept = 0, size = 0.5, colour = "grey80") +
+  geom_hline(yintercept = 0, size = 0.5, colour = "grey80") +
+  geom_point(size = 0.5, colour = "grey50") +
+  scale_x_continuous("log2 fold-change, Wakeup dataset",
+                     breaks = -6:6,
+                     limits = c(-7,7), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  scale_y_continuous("log2 fold-change, Gat201 dataset",
+                     breaks = -6:6,
+                     limits = c(-7,7), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_equal(clip = "off") +
+  labs(title = "RPMI+serum vs YPD, 37°C 2hr, wild-type") +
+  theme(panel.grid.major = element_blank())
+
+plot_scatter_filtered
+```
+
+```{r plot_scatter_filtered_selectgenes, fig.height = 6.4, fig.width = 6}
+my30genes <- 
+  read_tsv("../input_annotation/CryptoWakeup_30genes.txt") %>%
+  dplyr::rename(gene = GeneID)
+
+deseq_joined_my30genes <- 
+  left_join(my30genes, 
+            deseq_joined %>% dplyr::select(-geneName),
+            by = "gene")
+  
+plot_scatter_filtered +
+  annotate("text", x = 7, y = 7, hjust = 1, vjust = 1,
+           label = paste0("R = ", round(cor_log2FC_q10filtered,2))) +
+  geom_point(data = deseq_joined_my30genes, size = 1, colour = "darkblue") +
+  geom_text_repel(data = deseq_joined_my30genes, 
+                  aes(label = GeneName), colour = "darkblue")
+```
+
