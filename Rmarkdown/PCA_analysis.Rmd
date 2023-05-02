@@ -263,8 +263,8 @@ PC_legend_Time_GC <- get_legend(
 
 # plot those aligned in a grid
 
-plot_grid(PC1vs2, plot_percentvar_rlog, NULL,   
-          PC1vs3, PC2vs3, PC_legend_Time_GC,
+plot_grid(PC1vs2, PC_legend_Time_GC,plot_percentvar_rlog, 
+          PC1vs3, PC2vs3, NULL,
           PC1vs4, PC2vs4, PC3vs4, 
           ncol = 3,
           align = "hv")
