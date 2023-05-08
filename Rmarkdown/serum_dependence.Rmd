@@ -150,6 +150,12 @@ Condition_Time_levels <- c("Y_0",
 GAT201_Time_levels <- c("WT_0", "WT_30", "WT_120", "WT_240",
                         "del_0", "del_30", "del_120", "del_240")
 
+## GAT201_Time, for vertical printing
+GAT201_Time_levels_vprint <- 
+  GAT201_Time_levels %>%
+  stringr::str_replace("del","∆") %>%
+  stringr::str_replace("_","\n")
+
 # GAT201_Condition_Time
 GCT_levels <- c("WT_Y_0", 
                 "WT_R_30", "WT_RS_30", 
@@ -843,6 +849,9 @@ barplot_countDEGs_GT_vsserum <-
                     values = c("Down" = "darkred",
                                "Up" = "darkblue")) +
   scale_y_continuous("gene count\n2x DE, 5% FDR", expand = c(0,0)) +
+  scale_x_discrete("GAT201 status, Time (mins.)", 
+                   breaks = GAT201_Time_levels, 
+                   labels = GAT201_Time_levels_vprint) +
   theme(panel.grid.major.x = element_blank())
 
 barplot_countDEGs_GT_vsserum
@@ -991,6 +1000,81 @@ DEGdf_delGAT201_240_vsSerum_down2x_FDR5
 - CNAG_03007, hypothetical protein
 - CNAG_02005, hypothetical protein
 - CNAG_03453, CipC-like antibiotic response protein
+
+
+## Volcano plot, serum-dependent DGE in wild-type at 4 hours.
+
+```{r volcano_WT_240_vsSerum}
+
+volcano_WT_240_vsSerum <- 
+  ggplot(data = dplyr::filter(deseq_df_GT_vsserum,
+                              GAT201_Time == "WT_240"),
+         aes(x = log2FC, y = -log10(padj)) ) +
+  geom_point(size = 0.5, colour = "grey50") +
+  geom_point(data = DEGdf_WT_240_vsSerum_up2x_FDR5,
+             size = 1, colour = "darkblue") +
+  geom_point(data = DEGdf_WT_240_vsSerum_down2x_FDR5,
+             size = 1, colour = "darkred") +
+  scale_y_continuous("-log10(p)",
+                     limits = c(0,20), expand = c(0,0),
+                     oob=scales::squish) +
+  scale_x_continuous("log2 fold-change, RPMI 240 mins.\n← less with serum             more with serum →",
+                     breaks = -5:5,
+                     limits = c(-4,4), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_cartesian(clip = "off") +
+  labs(title = "GAT201 WT")
+
+volcano_WT_240_vsSerum
+```
+
+
+## Volcano plot, serum-dependent DGE in gat201∆ at 4 hours.
+
+```{r volcano_delGAT201_240_vsSerum}
+
+volcano_delGAT201_240_vsSerum <- 
+  ggplot(data = dplyr::filter(deseq_df_GT_vsserum,
+                              GAT201_Time == "del_240"),
+         aes(x = log2FC, y = -log10(padj)) ) +
+  geom_point(size = 0.5, colour = "grey50") +
+  geom_point(data = DEGdf_delGAT201_240_vsSerum_up2x_FDR5,
+             size = 1, colour = "darkblue") +
+  geom_point(data = DEGdf_delGAT201_240_vsSerum_down2x_FDR5,
+             size = 1, colour = "darkred") +
+  scale_y_continuous("-log10(p)",
+                     limits = c(0,20), expand = c(0,0),
+                     oob=scales::squish) +
+  scale_x_continuous("log2 fold-change, RPMI 240 mins.\n← less with serum             more with serum →",
+                     breaks = -5:5,
+                     limits = c(-4,4), expand = c(0.01,0.01),
+                     oob = scales::squish) +
+  coord_cartesian(clip = "off") +
+  labs(title = "gat201∆")
+
+volcano_delGAT201_240_vsSerum
+```
+
+## Multipanel plot showing Serum affects expression of a small set of transcripts.
+
+```{r multipanel_serumdependence, fig.width = 5, fig.height = 8}
+theme_gridplot <-  
+  theme_cowplot(font_size = 12, font_family = "Arial") +
+  theme(panel.grid.major = element_line(colour = "grey90", size = 0.5))
+
+multipanel_serumdependence <- 
+  plot_grid(barplot_countDEGs_GT_vsserum + theme_gridplot,
+            volcano_WT_240_vsSerum  + theme_gridplot,
+            volcano_delGAT201_240_vsSerum  + theme_gridplot,
+            ncol = 1, labels = "AUTO"
+  )
+
+multipanel_serumdependence
+
+ggsave("../results/serum_dependence_count_volcano2x.png",
+       multipanel_serumdependence,
+       width = 5, height = 8)
+```
 
 
 # TO DO
