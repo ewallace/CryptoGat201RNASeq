@@ -65,15 +65,28 @@ theme_set(
 
 ```
 
+## Load H99 Gene information
+
+```{r load_gene_info}
+gene_info_df <- 
+  here::here("input_annotation",
+             "H99_geneinfo_FungiDB59.txt") %>%
+  readr::read_tsv(comment = "#")  %>% 
+  dplyr::rename(gene = GeneID, geneName = GeneName) %>%
+  dplyr::mutate(geneName = dplyr::coalesce(geneName, gene))
+```
 
 ## Load count data and remove unwanted parts of column names
 
 ```{r load_count_data}
 # note: we should insist that counts are loaded as integers
 # and check the other data types
-counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
-                   comment = "#") %>% 
-          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+counts <- 
+  here::here("quantseqfwd_EH_050221", "counts.txt") %>%
+  readr::read_tsv(comment = "#" #
+                  #, col_types = paste0("cfiifi", rep("i", 56), collapse = "")
+                  ) %>% 
+  dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
 
 ```
 
@@ -147,11 +160,19 @@ coefnames_GAT201 <- c("Condition_TimeY_0.GAT201WT", "Condition_TimeR_30.GAT201WT
 deseq_df_CT_vsGAT201 <- 
   biobroom::tidy.DESeqDataSet(dds_all) %>%
   dplyr::filter(term %in% coefnames_GAT201) %>%
-  mutate(Condition_Time = term %>%
-           stringr::str_remove("Condition_Time") %>%
-           stringr::str_remove(".GAT201WT") %>%
-           factor(levels = Condition_Time_levels)) %>%
-  select(Condition_Time, gene, baseMean, log2FC = estimate, stderror, padj = p.adjusted)
+  dplyr::mutate(Condition_Time = term %>%
+                  stringr::str_remove("Condition_Time") %>%
+                  stringr::str_remove(".GAT201WT") %>%
+                  factor(levels = Condition_Time_levels)) %>%
+  dplyr::left_join(gene_info_df,
+                   by = "gene") %>% 
+  dplyr::select(Condition_Time, 
+                gene, 
+                geneName, 
+                baseMean, 
+                log2FC = estimate, 
+                stderror, 
+                padj = p.adjusted)
 
 # check we retained all the levels
 unique(deseq_df_CT_vsGAT201$Condition_Time)
@@ -209,6 +230,12 @@ DEGdf_RPMI4h_vsGAT201_down2x_FDR5 <-
                 log2FC < -1, padj < 0.05) %>%
   dplyr::arrange(log2FC)
 
+DEGs_of_interest <- 
+  c("GAT204", "LIV3", "BLP1", "PDR802", "HXT1", "FCY2")
+
+DEGs_of_interest_df <- 
+  deseq_df_CT_vsGAT201 %>%
+  dplyr::filter(geneName %in% DEGs_of_interest)
 
 volcano_RPMI4h_vsGAT201 <- 
   ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
@@ -226,24 +253,12 @@ volcano_RPMI4h_vsGAT201 <-
                      breaks = -5:5,
                      limits = c(-5,5), expand = c(0.01,0.01),
                      oob = scales::squish) +
-  coord_cartesian(clip = "off") +
-  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
-                              Condition_Time == "R_240",
-                              gene == "CNAG_01551"),
-                  min.segment.length = 0, seed = 0,
-                  colour = "darkblue", label = "GAT201")  +
-  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
-                              Condition_Time == "R_240",
-                              gene == "CNAG_06762"),
-                  min.segment.length = 0, seed = 0,
-                  nudge_x = -0.1, nudge_y = 50,
-                  colour = "darkblue", label = "GAT204")   +
-  geom_text_repel(data = dplyr::filter(deseq_df_CT_vsGAT201,
-                              Condition_Time == "R_240",
-                              gene == "CNAG_03894"),
-                  min.segment.length = 0, seed = 2,
-                  nudge_y = 20,
-                  colour = "darkblue", label = "PDR802")
+  coord_cartesian(clip = "off") # +
+  # geom_text_repel(data = dplyr::filter(DEGs_of_interest_df,
+  #                             Condition_Time == "R_240"),
+  #                 aes(label = geneName),
+  #                 min.segment.length = 3, seed = 0,
+  #                 colour = "darkblue")
 
 volcano_RPMI4h_vsGAT201
 ```
@@ -336,7 +351,7 @@ This also defines the `plotheat_log2FC` function that we will use later.
 
 ```{r plotheat_log2FC_select, fig.width = 6, fig.height = 2}
 
-plotheat_log2FC <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00483"),
+plotheat_log2FC_gene <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00483"),
                              data = deseq_df_CT_vsGAT201) {
   ggplot( data = dplyr::filter(data, 
                                gene %in% genes)
@@ -350,7 +365,21 @@ plotheat_log2FC <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00483")
           axis.ticks.y = element_blank())
 }
 
-plotheat_log2FC()
+plotheat_log2FC_geneName <- function( geneNames = c("GAT204", "CNAG_06917", "ACT1"),
+                             data = deseq_df_CT_vsGAT201) {
+  ggplot( data = dplyr::filter(data, 
+                               geneName %in% geneNames)
+  ) +
+    geom_tile(aes(x = Condition_Time, y = geneName, fill = log2FC)) +
+    scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+                         high = "darkblue", low = "darkred") +
+    coord_cartesian(expand = c(0,0)) +
+    theme(panel.grid.major = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.y = element_blank())
+}
+
+plotheat_log2FC_geneName()
 ```
 
 ## Plot heatmap of three transcription factors
@@ -361,7 +390,7 @@ plotheat_log2FC()
 
 ```{r plotheat_log2FC_TFs, fig.width = 6, fig.height = 2}
 
-plotheat_log2FC(genes = c("CNAG_05392", "CNAG_03894", "CNAG_06762"))
+plotheat_log2FC_geneName(geneNames = c("ZAP104", "PDR802", "GAT204"))
 ```
 
 ## Select genes that are DE dependent on GAT201 at any timepoint
@@ -381,31 +410,31 @@ DEGAT201_down_anytime2x <-
   deseq_df_CT_vsGAT201 %>%
   dplyr::filter(log2FC < -1, padj < 0.05)
 
-DEGAT201_list_anytime2x <- c(unique(DEGAT201_up_anytime2x$gene),
-                             unique(DEGAT201_down_anytime2x$gene))
+DEGAT201_list_anytime2x <- c(unique(DEGAT201_up_anytime2x$geneName),
+                             unique(DEGAT201_down_anytime2x$geneName))
 
 # list genes arranged by log2FC at average of R_240 and RS_240
 DEGAT201_list_anytime2x_arrange_240 <- 
   deseq_df_CT_vsGAT201 %>%
   dplyr::filter(gene %in% DEGAT201_list_anytime2x, 
                 Condition_Time %in% c("R_240", "RS_240")) %>%
-  group_by(gene) %>%
+  group_by(gene, geneName) %>%
   dplyr::summarise(log2FC = mean(log2FC)) %>%
   dplyr::arrange(log2FC) %>%
-  dplyr::pull(gene)
+  dplyr::pull(geneName)
 
 # Create data frame with only those genes, ordered as above
 # Note we use factor levels to create the ordering
 deseq_df_CT_vsGAT201_anytime2x_arrange_240 <- 
   deseq_df_CT_vsGAT201 %>%
-  dplyr::filter(gene %in% DEGAT201_list_anytime2x) %>%
-  dplyr::mutate(gene = 
-                  factor(gene, 
+  dplyr::filter(geneName %in% DEGAT201_list_anytime2x) %>%
+  dplyr::mutate(geneName = 
+                  factor(geneName, 
                          levels = DEGAT201_list_anytime2x_arrange_240))
 
 heatmap_select_DEGAT201_anytime2x_240 <- 
-  plotheat_log2FC(genes = DEGAT201_list_anytime2x, 
-                  data =  deseq_df_CT_vsGAT201_anytime2x_arrange_240) + 
+  plotheat_log2FC_geneName(geneNames = DEGAT201_list_anytime2x, 
+                           data =  deseq_df_CT_vsGAT201_anytime2x_arrange_240) + 
   theme(axis.text.y = element_blank()) +
   scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
                        high = "darkblue", low = "darkred",
@@ -429,31 +458,32 @@ DEGAT201_down_anytime8x <-
   deseq_df_CT_vsGAT201 %>%
   dplyr::filter(log2FC < -3, padj < 0.05)
 
-DEGAT201_list_anytime8x <- c(unique(DEGAT201_up_anytime8x$gene),
-                             unique(DEGAT201_down_anytime8x$gene))
+DEGAT201_list_anytime8x <- c(unique(DEGAT201_up_anytime8x$geneName),
+                             unique(DEGAT201_down_anytime8x$geneName))
 
 # list genes arranged by log2FC at R_240
 DEGAT201_list_anytime8x_arrange_240 <- 
   deseq_df_CT_vsGAT201 %>%
-  dplyr::filter(gene %in% DEGAT201_list_anytime8x, 
+  dplyr::filter(geneName %in% DEGAT201_list_anytime8x, 
                 Condition_Time %in% c("R_240", "RS_240")) %>%
-  group_by(gene) %>%
+  group_by(gene, geneName) %>%
   dplyr::summarise(log2FC = mean(log2FC)) %>%
   dplyr::arrange(log2FC) %>%
-  dplyr::pull(gene)
+  dplyr::pull(geneName)
 
 # Create data frame with only those genes, ordered as above
 deseq_df_CT_vsGAT201_anytime8x_arrange_240 <- 
   deseq_df_CT_vsGAT201 %>%
-  dplyr::filter(gene %in% DEGAT201_list_anytime8x) %>%
-  dplyr::mutate(gene = 
-                  factor(gene, 
+  dplyr::filter(geneName %in% DEGAT201_list_anytime8x) %>%
+  dplyr::mutate(geneName = 
+                  factor(geneName, 
                          levels = DEGAT201_list_anytime8x_arrange_240))
 
 heatmap_select_DEGAT201_anytime8x_240 <- 
-  plotheat_log2FC(genes = DEGAT201_list_anytime8x, 
-                  data = deseq_df_CT_vsGAT201_anytime8x_arrange_240) + 
-  theme(axis.text.y = element_text(size = 8)) +
+  plotheat_log2FC_geneName(geneNames = DEGAT201_list_anytime8x, 
+                           data = deseq_df_CT_vsGAT201_anytime8x_arrange_240) + 
+  theme(axis.text.y = element_text(size = 8), 
+        axis.title.y = element_blank()) +
   scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
                        high = "darkblue", low = "darkred",
                        limits = c(-4, 4), oob = scales::squish)
@@ -621,7 +651,7 @@ DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
 # Draft Multipanel Figure
 
 
-```{r figure_DESEQ_GAT201, fig.width = 9, fig.height = 9}
+```{r figure_DESEQ_GAT201, fig.width = 7.5, fig.height = 8.75}
 figure_left_column <- 
     plot_grid(
     barplot_countDEGs_CT_vsGAT201 +
@@ -642,15 +672,17 @@ figure_right_column <-
                  colour = "grey50", size = 18),    
     ncol = 1,
     labels = c("D","E"),
-    rel_heights = c(3,7)
+    rel_heights = c(4,6)
   )
 
-plot_grid(
-  figure_left_column,
-  figure_right_column,
-  ncol = 2,
-  rel_widths = c(2,1))
+figure_DESEQ_GAT201 <- 
+  plot_grid(
+    figure_left_column,
+    figure_right_column,
+    ncol = 2,
+    rel_widths = c(2,1))
 
+figure_DESEQ_GAT201
 ```
 
 Figure. GAT201 has a large impact on gene expression as cells reactivate, acting via its direct targets.
@@ -661,6 +693,12 @@ D. A majority of differentially expressed genes are direct targets of GAT201. Th
 E. Gene Ontology analysis shows that...
 
 
+```{r save_figure_DESEQ_GAT201}
+here::here("results","figure_DESEQ_GAT201.svg") %>%
+  ggsave(plot = figure_DESEQ_GAT201, width = 7.5, height = 8.75)
+```
+
+
 # To do
 
 - Discuss which heatmap version to use in draft multipanel figure
@@ -668,3 +706,10 @@ E. Gene Ontology analysis shows that...
 - Add informative header to output list of differentially expressed genes
 - Do we need a statistical test of enrichment?
 - Add GO analysis panel
+
+
+# Session info for reproducibility
+
+```{r session_info}
+sessionInfo()
+```
