@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 
 # Summary
 
-This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend only on Gat201 at later timepoints. This means that we treat the two WT strains as the same, and the two ∆gat201 strains as the same.
+This document is an analysis of the Gat201 RNA-seq dataset, focusing on differences that depend only on Gat201 at later timepoints. This means that we treat the two WT strains as the same, and the two gat201∆ strains as the same.
 
 This makes figure panels:
 
@@ -100,6 +100,12 @@ Here we choose how the Strain labels behave by manipulating the factors. This cr
 Condition_Time_levels <- c("Y_0", 
                            "R_30", "R_120", "R_240",
                            "RS_30", "RS_120", "RS_240") 
+
+## Condition_Time, for vertical printing
+Condition_Time_levels_vprint <- 
+  c("\n0", 
+    "−\n30", "−\n120", "−\n240",
+    "+\n30", "+\n120", "+\n240") 
 
 samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
     magrittr::set_rownames(.$SampleID) %>%
@@ -202,11 +208,19 @@ barplot_countDEGs_CT_vsGAT201 <-
   ggplot(data = countDEGs_CT_vsGAT201_long,
          aes(x = Condition_Time, y = DEG_count, fill = Direction)) +
   geom_col(position = "dodge") +
-  scale_fill_manual("WT vs ∆gat201",
+  scale_fill_manual("GAT201 vs gat201∆",
+                    breaks = c("Up", "Down"),
                     values = c("Up" = "darkblue", 
-                               "Down" = "darkred")) +
+                               "Down" = "darkred"),
+                    labels = c("Up" = "up in GAT201", 
+                               "Down" = "up in gat201∆")) +
   scale_y_continuous("gene count\n2x DE, 5% FDR", expand = c(0,0)) +
-  theme(panel.grid.major.x = element_blank())
+  scale_x_discrete("Serum, Time (mins.) in RPMI", 
+                   breaks = Condition_Time_levels, 
+                   labels = Condition_Time_levels_vprint) +
+  theme(panel.grid.major.x = element_blank(),
+        legend.position = c(0.65, 0.9),
+        legend.title = element_blank())
 
 barplot_countDEGs_CT_vsGAT201
 ```
@@ -249,7 +263,7 @@ volcano_RPMI4h_vsGAT201 <-
   scale_y_continuous("-log10(p)",
                      limits = c(0,100), expand = c(0,0),
                      oob=scales::squish) +
-  scale_x_continuous("log2 fold-change, WT vs ∆gat201, RPMI at 4hrs",
+  scale_x_continuous("log2 fold-change, RPMI 240 mins.\n← up in gat201∆       up in GAT201 →",
                      breaks = -5:5,
                      limits = c(-5,5), expand = c(0.01,0.01),
                      oob = scales::squish) +
@@ -357,7 +371,7 @@ plotheat_log2FC_gene <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00
                                gene %in% genes)
   ) +
     geom_tile(aes(x = Condition_Time, y = gene, fill = log2FC)) +
-    scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+    scale_fill_gradient2("log2 fold-change\nWT vs gat201∆",
                          high = "darkblue", low = "darkred") +
     coord_cartesian(expand = c(0,0)) +
     theme(panel.grid.major = element_blank(),
@@ -366,13 +380,16 @@ plotheat_log2FC_gene <- function( genes = c("CNAG_06762", "CNAG_06917", "CNAG_00
 }
 
 plotheat_log2FC_geneName <- function( geneNames = c("GAT204", "CNAG_06917", "ACT1"),
-                             data = deseq_df_CT_vsGAT201) {
+                                      data = deseq_df_CT_vsGAT201) {
   ggplot( data = dplyr::filter(data, 
                                geneName %in% geneNames)
   ) +
     geom_tile(aes(x = Condition_Time, y = geneName, fill = log2FC)) +
-    scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+    scale_fill_gradient2("log2 fold-change\nWT vs gat201∆",
                          high = "darkblue", low = "darkred") +
+    scale_x_discrete("Serum, Time (mins.) in RPMI", 
+                     breaks = Condition_Time_levels, 
+                     labels = Condition_Time_levels_vprint) +
     coord_cartesian(expand = c(0,0)) +
     theme(panel.grid.major = element_blank(),
           axis.line = element_blank(),
@@ -436,7 +453,7 @@ heatmap_select_DEGAT201_anytime2x_240 <-
   plotheat_log2FC_geneName(geneNames = DEGAT201_list_anytime2x, 
                            data =  deseq_df_CT_vsGAT201_anytime2x_arrange_240) + 
   theme(axis.text.y = element_blank()) +
-  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+  scale_fill_gradient2("log2 fold-change\nWT vs gat201∆",
                        high = "darkblue", low = "darkred",
                        limits = c(-3.2, 3.2), oob = scales::squish)
 
@@ -483,8 +500,9 @@ heatmap_select_DEGAT201_anytime8x_240 <-
   plotheat_log2FC_geneName(geneNames = DEGAT201_list_anytime8x, 
                            data = deseq_df_CT_vsGAT201_anytime8x_arrange_240) + 
   theme(axis.text.y = element_text(size = 8), 
-        axis.title.y = element_blank()) +
-  scale_fill_gradient2("log2 fold-change\nWT vs ∆GAT201",
+        axis.title.y = element_blank(),
+        legend.position = "top") +
+  scale_fill_gradient2("log2 fold-change\nGAT201 vs gat201∆",
                        high = "darkblue", low = "darkred",
                        limits = c(-4, 4), oob = scales::squish)
 
@@ -618,7 +636,9 @@ Collectively this argues that Gat201 is itself the major driver of differential 
 
 ## Output intersected genelists
 
-We recently showed that ∆gat204 also derepresses growth in RPMI, like ∆gat201. This suggests that there might be one or more shared targets of both GAT201 and GAT204 that contribute to the phenotype. Here we create and write out genelists:
+We recently showed that gat204∆ also derepresses growth in RPMI, like gat201∆.
+This suggests that there might be one or more shared targets of both GAT201 and GAT204 that contribute to the phenotype.
+Here we create and write out genelists:
 
 - DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt
 - DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt
@@ -650,37 +670,23 @@ DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
 
 # Draft Multipanel Figure
 
-
 ```{r figure_DESEQ_GAT201, fig.width = 7.5, fig.height = 8.75}
-figure_left_column <- 
-    plot_grid(
+figure_DESEQ_GAT201 <- 
+  plot_grid(
     barplot_countDEGs_CT_vsGAT201 +
       theme(plot.margin = unit(c(0,0,0,0.1),"in")),
     volcano_RPMI4h_vsGAT201,
     heatmap_select_DEGAT201_anytime8x_240,
-    ncol = 1,
-    rel_heights = c(1,1,3),
-    labels = c("A","B","C")
-  )
-
-figure_right_column <- 
-  plot_grid(
     venn_RPMI4h_vsGAT201_Gat201ChIP  +
       theme(plot.margin = unit(c(0,0,0.1,0.2),"in")),
-    ggdraw() + 
-      draw_label("GO analysis",
-                 colour = "grey50", size = 18),    
-    ncol = 1,
-    labels = c("D","E"),
-    rel_heights = c(4,6)
-  )
-
-figure_DESEQ_GAT201 <- 
-  plot_grid(
-    figure_left_column,
-    figure_right_column,
+    # ggdraw() + 
+    #   draw_label("GO analysis",
+    #              colour = "grey50", size = 18),    
     ncol = 2,
-    rel_widths = c(2,1))
+    labels = "AUTO",
+    rel_widths = c(1.25, 1),
+    rel_heights = c(1, 2.5)
+  )
 
 figure_DESEQ_GAT201
 ```
@@ -691,6 +697,8 @@ B. GAT201 promotes upregulation of specific genes more than downregulation. Volc
 C. GAT201-dependent differential gene expression is more extreme at later timepoints. The panel shows all the genes that are at least 8x differentially expressed in any combination of condition and time, ordered by their average fold-change at 4 hours. 
 D. A majority of differentially expressed genes are direct targets of GAT201. The panel shows the DEGs in RPMI at 4 hours (as in panel B) compared to Gat201 targets measured by ChIP-seq from Homer et al. 2016. This is approximately a 3-fold enrichment.
 E. Gene Ontology analysis shows that...
+
+
 
 
 ```{r save_figure_DESEQ_GAT201}
