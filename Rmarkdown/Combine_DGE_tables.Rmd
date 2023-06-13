@@ -1,0 +1,66 @@
+---
+title: "Combine DEG tables"
+author: "Edward Wallace"
+date: '2023-06-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(writexl)
+library(magrittr)
+library(tibble)
+```
+
+This file combines .txt format differential expressed gene tables in .txt format into a single .xlsx file for supplementary data Table S3, `CryptoGAT201_DEG_analysis_collected.xlsx`. That's all.
+
+Run this **after** the R markdown files:
+
+- serum_dependence.Rmd
+- DESeq_GAT201.Rmd
+- DESeq_WT2h_vs_0min.Rmd
+
+
+## Load data, write to .xlsx
+
+```{r load_data}
+read_deseqdf <- function(filename, datadir = "results") {
+  here::here(datadir, filename) %>%
+    readr::read_tsv()
+}
+
+write_xlsx(
+  x = list(
+    legend = tibble(
+      Contents = c("Differential Expressed Gene analysis of Cryptococcus GAT201 RNA-seq dataset",
+        "Edward Wallace Edward.Wallace@ed.ac.uk",
+        "repository: https://github.com/ewallace/CryptoGat201RNASeq/",
+        "see files serum_dependence.Rmd, DESeq_GAT201.Rmd, DESeq_WT2h_vs_0min.Rmd")),
+    WT_30_vsSerum = read_deseqdf("deseq_df_WT_30_vsSerum.txt"),
+    WT_120_vsSerum = read_deseqdf("deseq_df_WT_120_vsSerum.txt"),
+    WT_240_vsSerum = read_deseqdf("deseq_df_WT_240_vsSerum.txt"),
+    gat201del_30_vsSerum = read_deseqdf("deseq_df_gat201del_30_vsSerum.txt"),
+    gat201del_120_vsSerum = read_deseqdf("deseq_df_gat201del_120_vsSerum.txt"),
+    gat201del_240_vsSerum = read_deseqdf("deseq_df_gat201del_240_vsSerum.txt"),
+    RPMI_30_vsGAT201 = read_deseqdf("deseq_df_RPMI_30_vsGAT201.txt"),
+    RPMI_120_vsGAT201 = read_deseqdf("deseq_df_RPMI_120_vsGAT201.txt"),
+    RPMI_240_vsGAT201 = read_deseqdf("deseq_df_RPMI_240_vsGAT201.txt"),
+    RPMISerum_30_vsGAT201 = read_deseqdf("deseq_df_RPMISerum_30_vsGAT201.txt"),
+    RPMISerum_120_vsGAT201 = read_deseqdf("deseq_df_RPMISerum_120_vsGAT201.txt"),
+    RPMISerum_240_vsGAT201 = read_deseqdf("deseq_df_RPMISerum_240_vsGAT201.txt"),
+    WT_RPMISerum120min_vs_0min = read_deseqdf("deseq_df_WT_RPMISerum120min_vs_0min.txt")
+  ),
+  path = here::here("results", 
+                    "CryptoGAT201_DGE_analysis_collected.xlsx"),
+  col_names = TRUE,
+  format_headers = TRUE,
+  use_zip64 = FALSE
+)
+```
+
+
+# Session info for reproducibility
+
+```{r session_info}
+sessionInfo()
+```
