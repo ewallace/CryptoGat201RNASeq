@@ -28,8 +28,10 @@ Also RIM101 is not in the GAT201-dependent list, and vice versa.
 
 ```{r load_RIM101}
 RIM101_DEGs_DMEM <- 
-  readxl::read_excel("../data_external/OMeara2013_TableS3_Rim101_DEGs_mbo006121415st3.xlsx",
-                     col_names = c("gene", "lnFC", "Annotation","GO_function", "GO_process", "GO_component"), skip = 1)
+  here::here("data_external", 
+             "OMeara2013_TableS3_Rim101_DEGs_mbo006121415st3.xlsx") %>%
+  readxl::read_excel(col_names = c("gene", "lnFC", "Annotation","GO_function", "GO_process", "GO_component"), 
+                     skip = 1)
 
 RIM101_DEGs_DMEM
 ```
@@ -44,8 +46,9 @@ ggplot(data = RIM101_DEGs_DMEM, aes(x = lnFC)) +
 
 ```{r load_GAT201}
 GAT201_DEGs_DMEM <- 
-  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
-                     sheet = "Gat201 RNA Data",
+  here::here("data_external", 
+             "Homer2016_TableS1_ChIPSeq.xls") %>%
+  readxl::read_excel(sheet = "Gat201 RNA Data",
                      col_names = c("gene", "log2FC_Rep1", "log2FC_Rep2","log2FC_mean", "ChIP_enrichment"),
                      skip = 1)
 
@@ -107,16 +110,21 @@ Comparing these numbers with the total number of genes (7823 in the GAT201 list)
 ## Compare GAT201 RPMI with GAT201 DMEM
 
 ```{r load_GAT201_RPMI4h}
-GAT201_down_RPMI4h <- read_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt")
-GAT201_up_RPMI4h <- read_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt")
+GAT201_down_RPMI4h <- 
+  here::here("results", "DEGids_RPMI_240_vsGAT201_down2x_FDR5.txt") %>%
+  read_lines()
+
+GAT201_up_RPMI4h <- 
+  here::here("results", "DEGids_RPMI_240_vsGAT201_up2x_FDR5.txt") %>%
+  read_lines()
 ```
 
 
 ```{r venn_GAT201_RPMI_vs_GAT201_DMEM}
 vennplotdata <- 
   list("down_RPMI" = GAT201_down_RPMI4h,
-       "up_RPMI" = GAT201_up_RPMI4h,
-       "up_DMEM" = GAT201_DEGs_DMEM  %>%
+       "up_RPMI"   = GAT201_up_RPMI4h,
+       "up_DMEM"   = GAT201_DEGs_DMEM  %>%
          dplyr::filter(log2FC_mean > 1 ) %>%
          dplyr::pull(gene),
        "down_DMEM" = GAT201_DEGs_DMEM  %>%
@@ -148,12 +156,12 @@ This is reasonable. About half the Gat201-regulated genes in RPMI (FDR 5%, 2x en
 
 ```{r venn_GAT201_RPMI_vs_RIM101_DMEM}
 vennplotdata <- 
-  list("GAT201_RPMI_up" = GAT201_down_RPMI4h,
+  list("GAT201_RPMI_up"   = GAT201_down_RPMI4h,
        "GAT201_RPMI_down" = GAT201_up_RPMI4h,
        "RIM101_DMEM_down" = RIM101_DEGs_DMEM  %>%
          dplyr::filter(lnFC < 0 ) %>%
          dplyr::pull(gene),
-       "RIM101_DMEM_up" = RIM101_DEGs_DMEM  %>%
+       "RIM101_DMEM_up"   = RIM101_DEGs_DMEM  %>%
          dplyr::filter(lnFC > 0 ) %>%
          dplyr::pull(gene)
   ) %>%
@@ -175,4 +183,10 @@ venn_GAT201_RPMI_vs_RIM101_DMEM <-
 venn_GAT201_RPMI_vs_RIM101_DMEM
 ```
 
-Again, the overlap is low. I think it's low enough that it's a waste of time to do any statistical tests to look for more: no evidence for overlapping targets of GAT201 and RIM101.
+Again, the overlap is low. Low enough that it's a waste of time to do any statistical tests to look for more: no evidence for overlapping targets of GAT201 and RIM101.
+
+# Session info for reproducibility
+
+```{r session_info}
+sessionInfo()
+```
