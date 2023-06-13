@@ -65,9 +65,10 @@ theme_set(
 ```{r load_count_data}
 # note: we should insist that counts are loaded as integers
 # and check the other data types
-counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
-                   comment = "#") %>% 
-          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+counts <- 
+  here::here("quantseqfwd_EH_050221", "counts.txt") %>%
+  readr::read_tsv(comment = "#") %>% 
+  dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
 
 ```
 
@@ -76,7 +77,9 @@ counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
 
 ```{r load_sample_sheet}
 
-samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+samplesheet <- 
+    here::here("input_experiment", "Gat201_samplesheet.xlsx") %>%
+    readxl::read_excel() %>%
     magrittr::set_rownames(.$SampleID) %>%
     dplyr::mutate(GAT201 = 
                     forcats::fct_collapse(Strain, 
@@ -179,6 +182,8 @@ ggplot(data = pcdf_rlog,
 
 # Plot PC1 vs PC2 prioritising Time and GAT201_serum
 
+This is figure 3B of manuscript
+
 ```{r plot_PC12_fancy, fig.height=2, fig.width=4.25}
 plot_PCA_Time_GC <- function(xpc = "PC1", ypc = "PC2",
                              data = pcdf_rlog) {
@@ -235,14 +240,14 @@ This plot shows that PC1 and PC2 are almost completely reporting on Time. Becaus
 
 
 ```{r save_PC12_fancy}
-ggsave("../results/PC12_plot_GAT201RNAseq.svg",
+ggsave(here::here("results", "PC12_plot_GAT201RNAseq.svg"),
        plot_PC12_fancy, height = 2, width = 4.25)
 ```
 
 
 ## Make aligned plot of first 4 PCs
 
-This is a draft of a multi-panel plot that could be a supplementary figure. 
+This multi-panel plot is Figure S7 of manuscript. 
 
 ```{r plot_PC1to4,fig.width = 7.5, fig.height = 7}
 # Create plot panels but without legends
@@ -269,26 +274,27 @@ plot_grid(PC1vs2, PC_legend_Time_GC,plot_percentvar_rlog,
           ncol = 3,
           align = "hv")
 
-ggsave("../results/PCmultipanel_plot_GAT201RNAseq.png",
-       plot_PC12_fancy, height = 7, width = 7.5)
+
+ggsave(here::here("results", "PCmultipanel_plot_GAT201RNAseq.png"),
+       height = 7, width = 7.5)
 ```
 
 This plot shows that PC3 reports on Gat201 status,  vs WT. 
 
 It is unclear what PC4 means.
 
+
 ## PC5 somewhat reports on serum at the later time points
 
-I found the clearest report in PC2 vs PC5, because PC2 lays out the times in the expected order.
-
-Do we need to include this plot panel?
+Clearest report in PC2 vs PC5, because PC2 lays out the times in the expected order.
 
 ```{r plot_PC25_fancy}
 plot_PCA_Time_GC("PC2", "PC5")
 ```
 
 
-## To do
+# Session info for reproducibility
 
-- decide which plots to include in 
-- try again with vst and see if it's different in any important way
+```{r session_info}
+sessionInfo()
+```
