@@ -6,12 +6,6 @@ output:
   html_document:
     toc: yes
     toc_depth: 2
-  word_document:
-    toc: yes
-    toc_depth: '2'
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
 ---
 
 ```{r setup, include=FALSE}
@@ -29,38 +23,39 @@ This makes figure panels:
 
 These will then be combined into a multipanel figure, figure 3 of the manuscript.
 
-This also outputs serum-dependent differential expressed data frames and genelists:
+This also outputs serum-dependent differential expressed data frames and genelists. (`deseq_df` for complete output, `DEGdf` for only differentially expressed genes in order, `DEGids` for just the ids of those genes to be used for GO analysis etc.)
 
-- DEGdf_WT_30_vsSerum.txt
-- DEGdf_WT_30_vsSerum_down2x_FDR5_ids.txt
+- deseq_df_WT_30_vsSerum.txt
 - DEGdf_WT_30_vsSerum_down2x_FDR5.txt
-- DEGdf_WT_30_vsSerum_up2x_FDR5_ids.txt
+- DEGids_WT_30_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_30_vsSerum_up2x_FDR5.txt
-- DEGdf_WT_120_vsSerum.txt
-- DEGdf_WT_120_vsSerum_down2x_FDR5_ids.txt
+- DEGids_WT_30_vsSerum_up2x_FDR5.txt
+- deseq_df_WT_120_vsSerum.txt
 - DEGdf_WT_120_vsSerum_down2x_FDR5.txt
-- DEGdf_WT_120_vsSerum_up2x_FDR5_ids.txt
+- DEGids_WT_120_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_120_vsSerum_up2x_FDR5.txt
-- DEGdf_WT_240_vsSerum.txt
-- DEGdf_WT_240_vsSerum_down2x_FDR5_ids.txt
+- DEGids_WT_120_vsSerum_up2x_FDR5.txt
+- deseq_df_WT_240_vsSerum.txt
 - DEGdf_WT_240_vsSerum_down2x_FDR5.txt
-- DEGdf_WT_240_vsSerum_up2x_FDR5_ids.txt
+- DEGids_WT_240_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_240_vsSerum_up2x_FDR5.txt
-- DEGdf_gat201del_30_vsSerum.txt
-- DEGdf_gat201del_30_vsSerum_down2x_FDR5_ids.txt
+- DEGids_WT_240_vsSerum_up2x_FDR5.txt
+- deseq_df_gat201del_30_vsSerum.txt
 - DEGdf_gat201del_30_vsSerum_down2x_FDR5.txt
-- DEGdf_gat201del_30_vsSerum_up2x_FDR5_ids.txt
+- DEGids_gat201del_30_vsSerum_down2x_FDR5.txt
 - DEGdf_gat201del_30_vsSerum_up2x_FDR5.txt
-- DEGdf_gat201del_120_vsSerum.txt
-- DEGdf_gat201del_120_vsSerum_down2x_FDR5_ids.txt
+- DEGids_gat201del_30_vsSerum_up2x_FDR5.txt
+- deseq_df_gat201del_120_vsSerum.txt
 - DEGdf_gat201del_120_vsSerum_down2x_FDR5.txt
-- DEGdf_gat201del_120_vsSerum_up2x_FDR5_ids.txt
+- DEGids_gat201del_120_vsSerum_down2x_FDR5.txt
 - DEGdf_gat201del_120_vsSerum_up2x_FDR5.txt
-- DEGdf_gat201del_240_vsSerum.txt
-- DEGdf_gat201del_240_vsSerum_down2x_FDR5_ids.txt
+- DEGids_gat201del_120_vsSerum_up2x_FDR5.txt
+- deseq_df_gat201del_240_vsSerum.txt
 - DEGdf_gat201del_240_vsSerum_down2x_FDR5.txt
-- DEGdf_gat201del_240_vsSerum_up2x_FDR5_ids.txt
+- DEGids_gat201del_240_vsSerum_down2x_FDR5.txt
 - DEGdf_gat201del_240_vsSerum_up2x_FDR5.txt
+- DEGids_gat201del_240_vsSerum_up2x_FDR5.txt
+
 
 # Setup: load packages, load data, clean and prep data
 
@@ -102,20 +97,35 @@ theme_set(
 ```
 
 ```{r, include = FALSE}
-write_DEGdflist <- function(DEGdf, datadir = "../results/", digits = 5,
-                            write_df = TRUE, write_list = TRUE) {
+write_DEGdflist <- function(DEGdf,
+                            datadir = here::here("results"),
+                            digits = 5,
+                            write_df = TRUE,
+                            write_list = TRUE,
+                            list_called_ids = TRUE) {
   # get the name of DEG
   DEGdfname <- deparse(substitute(DEGdf))
   # Writes a DEG dataframe and genelist
   if(write_df) {
     readr::write_tsv(x = DEGdf %>%
                        mutate_if(is.numeric, signif, digits = digits),
-                     file = paste0(datadir, DEGdfname, ".txt") )
+                     file = paste0(datadir, "/", DEGdfname, ".txt") )
   }
   if(write_list) {
+    if(list_called_ids) {
+      DEGlistname = paste0(datadir, 
+                           "/", 
+                           stringr::str_replace(DEGdfname, "df", "ids"),
+                           ".txt")
+    } else {
+      DEGlistname = paste0(datadir, 
+                           "/", 
+                           DEGdfname, 
+                           "_ids.txt")
+    }
     writeLines(text = DEGdf %>%
                  pull(gene),
-               con = paste0(datadir, DEGdfname, "_ids.txt") )
+               con = paste0(datadir, "/", DEGdfname, "_ids.txt") )
   }
 }
 ```
@@ -138,9 +148,10 @@ gene_info_df <-
 ```{r load_count_data}
 # note: we should insist that counts are loaded as integers
 # and check the other data types
-counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
-                   comment = "#") %>% 
-          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+counts <- 
+  here::here("quantseqfwd_EH_050221", "counts.txt") %>%
+  readr::read_tsv(comment = "#") %>% 
+  dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
 
 ```
 
@@ -183,7 +194,8 @@ GCT_levels <- c("WT_Y_0",
                 "del_R_240", "del_RS_240")
 
 samplesheet <- 
-  readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+  here::here("input_experiment", "Gat201_samplesheet.xlsx") %>%
+  readxl::read_excel() %>%
   magrittr::set_rownames(.$SampleID) %>%
   dplyr::mutate(GAT201 = 
                   forcats::fct_collapse(Strain, 
@@ -297,6 +309,8 @@ unique(deseq_df_GCT$GCT)
 
 ## Sanity-check: Did we get the log2FC right for a favourite gene?
 
+CNAG_06917 / TSA3 is strongly GAT201-dependent.
+
 ```{r print_log2FC_6917}
 deseq_df_GCT %>%
   filter(gene == "CNAG_06917")
@@ -313,19 +327,6 @@ ggplot(data = deseq_df_GCT %>%
         axis.line = element_blank())
 ```
 
-## Plot log2FC for genes with mincount 10, with no clustering
-
-```{r plot_log2FC_m10}
-ggplot(data = deseq_df_GCT_mincount_10,
-  aes(x = GCT, fill = log2FC, y = gene)) +
-  geom_tile() +
-  scale_fill_gradient2(low = "cyan", mid = "black", high = "yellow",
-                       limits = c(-3.5, 3.5), oob = scales::squish) +
-  theme(axis.text.x = element_text(angle = -45, hjust = 0.1),
-        panel.grid.major = element_blank(),
-        axis.line = element_blank(),
-        axis.text.y = element_blank(), axis.ticks.y = element_blank())
-```
 
 ## Calculate gene expression hierarchical clusters
 
@@ -470,7 +471,8 @@ plot_nice_GCT_yaxis <-
 
 # Combined plot of dendrogram and heatmap
 
-This combines the previous plot panels into a single plot, showing the dendrogram aligned with the clustered heatmap, and with nice x-axis labels.
+This is figure 3C of manuscript.
+It combines the previous plot panels into a single plot, showing the dendrogram aligned with the clustered heatmap, and with nice x-axis labels.
 
 ```{r combine_dendrogram_heatmap, fig.height = 5, fig.width = 5}
 plot_dh_nolegend <- 
@@ -497,9 +499,12 @@ plot_grid(get_legend(plot_log2FC_m10_dorder +
           ncol = 1,
           rel_heights = c(1,7))
 
-ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime.svg",
+
+ggsave(filename = here::here("results",
+                             "clustered_heatmap_GAT201SerumTime.svg"),
        width = 5, height = 5)
 ```
+
 
 ### Highlight select genes on y-axis.
 
@@ -543,7 +548,8 @@ plot_grid(plot_dendrogram_log2FC_m10,
           rel_widths = c(1,5,0.6),
           rel_heights = c(7,1))
 
-# ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime_plus.svg",
+# ggsave(filename = here::here("results", 
+#                              "clustered_heatmap_GAT201SerumTime_plus.svg"),
 #        width = 5.5, height = 5)
 ```
 
@@ -670,6 +676,8 @@ Note that we do not use these clusters later, except to check where the select g
 
 ## Plot example genes for main figure
 
+This is figure 3D of manuscript.
+
 ```{r plot_log2FC_line_faceted_6select, fig.height = 6, fig.width = 3}
 
 plot_mygenes_facet <- function(mygenes,
@@ -732,32 +740,28 @@ plot_mygenes_facet(
   mygenenames = c("TSA3", "CQS1", "GAT201", "SSA1", "CTR4", "TEF1")
 )
 
-ggsave(filename = "../results/log2FC_line_multipanel_6select.svg",
+ggsave(filename = here::here("results",
+                             "log2FC_line_multipanel_6select.svg"),
        width = 2.5, height = 5.8)
 ```
 
-```{r plot_log2FC_line_faceted_Gat201dep}
-plot_mygenes_facet(
-  mygenes =  c("CNAG_06762", "CNAG_05835", "CNAG_00979", "CNAG_02775", "CNAG_00795"),
-  mygenenames = c("GAT204", "LIV3", "CTR4", "BIM1", "CFL1")
-)
+## Plot 30 example genes for supplementary figure
 
-ggsave(filename = "../results/log2FC_line_multipanel_Gat201dep.png",
-       width = 2.5, height = 5)
-```
-
+This is figure S8 of manuscript.
 
 ```{r plot_log2FC_line_faceted_30genes, fig.height = 9, fig.width = 7.5}
 
-my25genes <- read_tsv("../input_annotation/CryptoWakeup_30genes.txt")
+my30genes <- 
+  here::here("input_annotation", "CryptoWakeup_30genes.txt") %>%
+  read_tsv()
 
 plot_mygenes_facet(
-  mygenes =  my25genes$GeneID,
-  mygenenames = my25genes$GeneName,
+  mygenes =  my30genes$GeneID,
+  mygenenames = my30genes$GeneName,
   facet_option = "wrap_fixed"
 )
 
-ggsave(filename = "../results/log2FC_line_30genes.png",
+ggsave(filename = here::here("results", "log2FC_line_30genes.png"),
        width = 7.5, height = 9.5)
 ```
 
@@ -867,12 +871,12 @@ Both as DEG dfs including log2 fold-change and p-values, also as lists of gene I
 First for wild-type cells
 
 ```{r DEGs_vsSerum_WT}
-DEGdf_WT_30_vsSerum <- 
+deseq_df_WT_30_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "WT_30") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_WT_30_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_WT_30_vsSerum, write_list = FALSE)
 
 DEGdf_WT_30_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -893,12 +897,12 @@ DEGdf_WT_30_vsSerum_down2x_FDR5 <-
 write_DEGdflist(DEGdf_WT_30_vsSerum_down2x_FDR5)
 
 
-DEGdf_WT_120_vsSerum <- 
+deseq_df_WT_120_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "WT_120") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_WT_120_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_WT_120_vsSerum, write_list = FALSE)
 
 DEGdf_WT_120_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -919,12 +923,12 @@ DEGdf_WT_120_vsSerum_down2x_FDR5 <-
 write_DEGdflist(DEGdf_WT_120_vsSerum_down2x_FDR5)
 
 
-DEGdf_WT_240_vsSerum <- 
+deseq_df_WT_240_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "WT_240") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_WT_240_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_WT_240_vsSerum, write_list = FALSE)
 
 DEGdf_WT_240_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -949,12 +953,12 @@ write_DEGdflist(DEGdf_WT_240_vsSerum_down2x_FDR5)
 Then for deltaGAT201 cells
 
 ```{r DEGs_vsSerum_gat201del}
-DEGdf_gat201del_30_vsSerum <- 
+deseq_df_gat201del_30_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_30") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_gat201del_30_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_gat201del_30_vsSerum, write_list = FALSE)
 
 DEGdf_gat201del_30_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -974,12 +978,13 @@ DEGdf_gat201del_30_vsSerum_down2x_FDR5 <-
 
 write_DEGdflist(DEGdf_gat201del_30_vsSerum_down2x_FDR5)
 
-DEGdf_gat201del_120_vsSerum <- 
+
+deseq_df_gat201del_120_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_120") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_gat201del_120_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_gat201del_120_vsSerum, write_list = FALSE)
 
 DEGdf_gat201del_120_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -999,12 +1004,13 @@ DEGdf_gat201del_120_vsSerum_down2x_FDR5 <-
 
 write_DEGdflist(DEGdf_gat201del_120_vsSerum_down2x_FDR5)
 
-DEGdf_gat201del_240_vsSerum <- 
+
+deseq_df_gat201del_240_vsSerum <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_240") %>%
   dplyr::select(-GAT201_Time)
 
-write_DEGdflist(DEGdf_gat201del_240_vsSerum, write_list = FALSE)
+write_DEGdflist(deseq_df_gat201del_240_vsSerum, write_list = FALSE)
 
 DEGdf_gat201del_240_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -1095,7 +1101,10 @@ volcano_gat201del_240_vsSerum <-
 volcano_gat201del_240_vsSerum
 ```
 
+
 ## Multipanel plot showing Serum affects expression of a small set of transcripts.
+
+This is Figure S9 of the manuscript.
 
 ```{r multipanel_serumdependence, fig.width = 5, fig.height = 8}
 theme_gridplot <-  
@@ -1111,8 +1120,8 @@ multipanel_serumdependence <-
 
 multipanel_serumdependence
 
-ggsave("../results/serum_dependence_count_volcano2x.png",
-       multipanel_serumdependence,
+ggsave(filename = here::here("results", "serum_dependence_count_volcano2x.png"),
+       plot = multipanel_serumdependence,
        width = 5, height = 8)
 ```
 

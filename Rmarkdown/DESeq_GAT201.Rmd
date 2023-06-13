@@ -1,17 +1,12 @@
 ---
 title: "DEseq analysis of Gat201-dependent gene expression"
 author: "Liz Hughes and Edward Wallace"
-date: "05/01/2022"
+date: "2022-05-01"
 output:
   html_document:
     toc: yes
     toc_depth: 2
-  word_document:
-    toc: yes
-    toc_depth: '2'
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
+
 ---
 
 ```{r setup, include=FALSE}
@@ -26,10 +21,9 @@ This makes figure panels:
 
 - count Gat201-dependent DEGs at each condition and timepoint
 - volcano plot of Gat201-dependent DE at the most different timepoint (RPMI 4hours)
-- outputs list of Gat201-DEGs at RPMI 4hours
 - heatmap of select Gat201-DEGs at each condition and timepoint
-- compare Gat201-DEGs with ChIP-seq data by ven diagram
-- Some kind of GO analysis panel - TO DO
+- compare Gat201-DEGs with ChIP-seq data by Venn diagram
+- outputs Gat201-dependend differential expressed genes at RPMI 4hours
 
 These are then combined into a multipanel figure, planned as figure 4 of the manuscript.
 
@@ -107,19 +101,21 @@ Condition_Time_levels_vprint <-
     "−\n30", "−\n120", "−\n240",
     "+\n30", "+\n120", "+\n240") 
 
-samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
-    magrittr::set_rownames(.$SampleID) %>%
-    dplyr::mutate(GAT201 = 
-                    forcats::fct_collapse(Strain, 
-                                          "WT" = c("a","A"), 
-                                          "del" = c("B","M")) %>% 
-                    forcats::fct_relevel("del"),
-                  Timepoint = factor(Timepoint),
-                  Condition_Time = factor(
-                    paste(Condition, Time, sep = "_"),
-                    levels = Condition_Time_levels
-                  )
-    )
+samplesheet <- 
+  here::here("input_experiment", "Gat201_samplesheet.xlsx") %>%
+  readxl::read_excel() %>%
+  magrittr::set_rownames(.$SampleID) %>%
+  dplyr::mutate(GAT201 = 
+                  forcats::fct_collapse(Strain, 
+                                        "WT" = c("a","A"), 
+                                        "del" = c("B","M")) %>% 
+                  forcats::fct_relevel("del"),
+                Timepoint = factor(Timepoint),
+                Condition_Time = factor(
+                  paste(Condition, Time, sep = "_"),
+                  levels = Condition_Time_levels
+                )
+  )
 
 ```
 
@@ -184,6 +180,47 @@ deseq_df_CT_vsGAT201 <-
 unique(deseq_df_CT_vsGAT201$Condition_Time)
 ```
 
+## Write deseq lists by timepoint to data frames.
+
+```{r write_deseq_dfs}
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "R_30") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMI_30_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "R_120") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMI_120_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "R_240") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMI_240_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "RS_30") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMISerum_30_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "RS_120") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMISerum_120_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "RS_240") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_RPMISerum_240_vsGAT201.txt"))
+```
+
+
 ## Count the number of DEGs up and down at each Condition and Time
 
 ```{r countDEGs_CT_vsGAT201, fig.width = 6, fig.height = 3}
@@ -230,15 +267,15 @@ barplot_countDEGs_CT_vsGAT201
 We are plotting only this Condition/Time because it has the most DEGs.
 
 
-```{r volcano_RPMI4h_vsGAT201, fig.width = 6, fig.height = 3}
+```{r volcano_RPMI_240_vsGAT201, fig.width = 6, fig.height = 3}
 # Make data frames of DEGs up and down, arranged by log2FC
-DEGdf_RPMI4h_vsGAT201_up2x_FDR5 <- 
+DEGdf_RPMI_240_vsGAT201_up2x_FDR5 <- 
   dplyr::filter(deseq_df_CT_vsGAT201,
                 Condition_Time == "R_240",
                 log2FC > 1, padj < 0.05) %>%
   dplyr::arrange(desc(log2FC))
 
-DEGdf_RPMI4h_vsGAT201_down2x_FDR5 <- 
+DEGdf_RPMI_240_vsGAT201_down2x_FDR5 <- 
   dplyr::filter(deseq_df_CT_vsGAT201,
                 Condition_Time == "R_240",
                 log2FC < -1, padj < 0.05) %>%
@@ -251,14 +288,14 @@ DEGs_of_interest_df <-
   deseq_df_CT_vsGAT201 %>%
   dplyr::filter(geneName %in% DEGs_of_interest)
 
-volcano_RPMI4h_vsGAT201 <- 
+volcano_RPMI_240_vsGAT201 <- 
   ggplot(data = dplyr::filter(deseq_df_CT_vsGAT201,
                               Condition_Time == "R_240"),
          aes(x = log2FC, y = -log10(padj)) ) +
   geom_point(size = 0.5, colour = "grey50") +
-  geom_point(data = DEGdf_RPMI4h_vsGAT201_up2x_FDR5,
+  geom_point(data = DEGdf_RPMI_240_vsGAT201_up2x_FDR5,
              size = 1, colour = "darkblue") +
-  geom_point(data = DEGdf_RPMI4h_vsGAT201_down2x_FDR5,
+  geom_point(data = DEGdf_RPMI_240_vsGAT201_down2x_FDR5,
              size = 1, colour = "darkred") +
   scale_y_continuous("-log10(p)",
                      limits = c(0,100), expand = c(0,0),
@@ -274,31 +311,33 @@ volcano_RPMI4h_vsGAT201 <-
   #                 min.segment.length = 3, seed = 0,
   #                 colour = "darkblue")
 
-volcano_RPMI4h_vsGAT201
+volcano_RPMI_240_vsGAT201
 ```
 
 ## Output the DEGs at RPMI 4h only
 
 Write output to tsv files, in order of log2 fold-change as calculated above.
 
-```{r DEGs_RPMI4h_vsGAT201}
-readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+```{r DEGs_RPMI_240_vsGAT201}
+readr::write_tsv(x = DEGdf_RPMI_240_vsGAT201_up2x_FDR5 %>%
                    mutate_if(is.numeric, signif, digits = 5),
-                 file = "../results/DEGdf_RPMI4h_vsGAT201_up2x_FDR5.txt")
+                 file = here::here("results",
+                                   "DEGdf_RPMI_240_vsGAT201_up2x_FDR5.txt"))
 
-readr::write_tsv(x = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+readr::write_tsv(x = DEGdf_RPMI_240_vsGAT201_down2x_FDR5 %>%
                    mutate_if(is.numeric, signif, digits = 5),
-                 file = "../results/DEGdf_RPMI4h_vsGAT201_down2x_FDR5.txt")
+                 file = here::here("results",
+                                   "DEGdf_RPMI_240_vsGAT201_down2x_FDR5.txt"))
 ```
 
-```{r DEGids_RPMI4h_vsGAT201}
-writeLines(text = DEGdf_RPMI4h_vsGAT201_up2x_FDR5 %>%
+```{r DEGids_RPMI_240_vsGAT201}
+writeLines(text = DEGdf_RPMI_240_vsGAT201_up2x_FDR5 %>%
              pull(gene),
-           con = "../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5.txt")
+           con = here::here("results", "DEGids_RPMI_240_vsGAT201_up2x_FDR5.txt"))
 
-writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
+writeLines(text = DEGdf_RPMI_240_vsGAT201_down2x_FDR5 %>%
              pull(gene),
-           con = "../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5.txt")
+           con = here::here("results", "DEGids_RPMI_240_vsGAT201_down2x_FDR5.txt"))
 ```
 
 
@@ -307,11 +346,11 @@ writeLines(text = DEGdf_RPMI4h_vsGAT201_down2x_FDR5 %>%
 Double-checking the overlap between GAT201-dependent DE genelists in RPMI with and without serum at 4h.
 
 
-```{r venn_vsGAT201_RPMI4h_vsserum, fig.width = 3.5, fig.height = 2}
+```{r venn_vsGAT201_RPMI_240_vsserum, fig.width = 3.5, fig.height = 2}
 
 vennplotdata_pmserum <- 
   list(
-    "Down_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
+    "Down_no" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene),
     "Down_serum" = dplyr::filter(deseq_df_CT_vsGAT201,
                                  Condition_Time == "RS_240",
                                  log2FC < -1, padj < 0.05) %>%
@@ -320,7 +359,7 @@ vennplotdata_pmserum <-
                                  Condition_Time == "RS_240",
                                  log2FC > 1, padj < 0.05) %>%
       dplyr::pull(gene),
-    "Up_no" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)
+    "Up_no" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene)
   ) %>%
   RVenn::Venn() %>%
   ggVennDiagram::process_data()
@@ -350,16 +389,6 @@ Check that some marker genes are behaving as expected:
 - TSA1 CNAG_06917, up in WT
 - ACT1 CNAG_00483, not really affected
 
-```{r plotpoints_log2FC_select, fig.width = 6, fig.height = 3}
-
-ggplot( data = dplyr::filter(deseq_df_CT_vsGAT201, 
-                             gene %in% c("CNAG_06762", "CNAG_06917", "CNAG_00483"))
-        ) +
-  geom_point(aes(x = Condition_Time, y = log2FC, colour = gene, shape = gene))
-  
-```
-
-## Repeat reality-check by heatmap
 
 This also defines the `plotheat_log2FC` function that we will use later.
 
@@ -399,16 +428,6 @@ plotheat_log2FC_geneName <- function( geneNames = c("GAT204", "CNAG_06917", "ACT
 plotheat_log2FC_geneName()
 ```
 
-## Plot heatmap of three transcription factors
-
-- ZAP104 CNAG_05392
-- PDR802 CNAG_03894
-- GAT204 CNAG_06762
-
-```{r plotheat_log2FC_TFs, fig.width = 6, fig.height = 2}
-
-plotheat_log2FC_geneName(geneNames = c("ZAP104", "PDR802", "GAT204"))
-```
 
 ## Select genes that are DE dependent on GAT201 at any timepoint
 
@@ -516,31 +535,34 @@ heatmap_select_DEGAT201_anytime8x_240
 
 ```{r load_chipseq}
 ChIPtargets_Gat201 <-
-  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+  readxl::read_excel(here::here("data_external", 
+                                "Homer2016_TableS1_ChIPSeq.xls"),
                      sheet = "Gat201 ChIP-Seq")
 
 ChIPtargets_Gat204 <-
-  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+  readxl::read_excel(here::here("data_external", 
+                                "Homer2016_TableS1_ChIPSeq.xls"),
                      sheet = "Gat204 ChIP-Seq")
 
 ChIPtargets_Liv3 <-
-  readxl::read_excel("../data_external/Homer2016_TableS1_ChIPSeq.xls",
+  readxl::read_excel(here::here("data_external", 
+                                "Homer2016_TableS1_ChIPSeq.xls"),
                      sheet = "Liv3 ChIP-Seq")
 ```
 
 ## Venn diagram of DEGs at 4hr and Gat201 targets
 
-```{r venn_RPMI4h_vsGAT201_Gat201ChIP, fig.width = 3, fig.height = 2}
+```{r venn_RPMI_240_vsGAT201_Gat201ChIP, fig.width = 3, fig.height = 2}
 
 vennplotdata_Gat201 <- 
   list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
-       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
-       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene) 
   ) %>%
   RVenn::Venn() %>%
   ggVennDiagram::process_data()
 
-venn_RPMI4h_vsGAT201_Gat201ChIP <- 
+venn_RPMI_240_vsGAT201_Gat201ChIP <- 
   ggplot() +
   geom_sf(aes(color = id), 
           data = ggVennDiagram::venn_setedge(vennplotdata_Gat201), show.legend = FALSE) +
@@ -552,14 +574,14 @@ venn_RPMI4h_vsGAT201_Gat201ChIP <-
   scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
   coord_sf(clip = "off")
 
-venn_RPMI4h_vsGAT201_Gat201ChIP
+venn_RPMI_240_vsGAT201_Gat201ChIP
 
 ```
 
 Here the majority of GAT201_up genes are direct targets, p = 
-`r length(intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene),
+`r length(intersect(dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene),
 dplyr::pull(ChIPtargets_Gat201, CNAG))) / 
-length(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene))`.
+length(dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene))`.
 
 This contrasts to a proportion of approximately 
 `r length( dplyr::pull(ChIPtargets_Gat201, CNAG) ) / nrow(counts)`
@@ -570,18 +592,18 @@ That's approximately a 3x enrichment.
 
 ## Venn diagram of DEGs at 4hr and Gat204 targets
 
-```{r venn_RPMI4h_vsGAT201_Gat204ChIP, fig.width = 3.5, fig.height = 2}
+```{r venn_RPMI_240_vsGAT201_Gat204ChIP, fig.width = 3.5, fig.height = 2}
 
 vennplotdata_Gat204 <- 
   list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
        "Gat204_ChIP" = dplyr::pull(ChIPtargets_Gat204, CNAG),
-       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
-       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene) 
   ) %>%
   RVenn::Venn() %>%
   ggVennDiagram::process_data()
 
-venn_RPMI4h_vsGAT201_Gat204ChIP <- 
+venn_RPMI_240_vsGAT201_Gat204ChIP <- 
   ggplot() +
   geom_sf(aes(color = id), 
           data = ggVennDiagram::venn_setedge(vennplotdata_Gat204), show.legend = FALSE) +
@@ -593,7 +615,7 @@ venn_RPMI4h_vsGAT201_Gat204ChIP <-
   scale_colour_manual(values = c("grey20", "forestgreen", "darkred", "darkblue")) +
   coord_sf(clip = "off")
 
-venn_RPMI4h_vsGAT201_Gat204ChIP
+venn_RPMI_240_vsGAT201_Gat204ChIP
 ```
 
 This shows that all the Gat204 targets that are differentially regulated are also Gat201 targets.
@@ -602,18 +624,18 @@ Also because 99% of Gat204 targets are Gat201 targets too.
 
 ## Venn diagram of DEGs at 4hr and Liv3 targets
 
-```{r venn_RPMI4h_vsGAT201_Liv3ChIP, fig.width = 3.5, fig.height = 2}
+```{r venn_RPMI_240_vsGAT201_Liv3ChIP, fig.width = 3.5, fig.height = 2}
 
 vennplotdata_Liv3 <- 
   list("Gat201_ChIP" = dplyr::pull(ChIPtargets_Gat201, CNAG),
        "Liv3_ChIP" = dplyr::pull(ChIPtargets_Liv3, CNAG),
-       "GAT201_down" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene),
-       "GAT201_up" = dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene) 
+       "GAT201_down" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene),
+       "GAT201_up" = dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene) 
   ) %>%
   RVenn::Venn() %>%
   ggVennDiagram::process_data()
 
-venn_RPMI4h_vsGAT201_Liv3ChIP <- 
+venn_RPMI_240_vsGAT201_Liv3ChIP <- 
   ggplot() +
   geom_sf(aes(color = id), 
           data = ggVennDiagram::venn_setedge(vennplotdata_Liv3), show.legend = FALSE) +
@@ -625,7 +647,7 @@ venn_RPMI4h_vsGAT201_Liv3ChIP <-
   scale_colour_manual(values = c("grey20", "goldenrod", "darkred", "darkblue")) +
   coord_sf(clip = "off")
 
-venn_RPMI4h_vsGAT201_Liv3ChIP
+venn_RPMI_240_vsGAT201_Liv3ChIP
 
 ```
 
@@ -640,31 +662,34 @@ We recently showed that gat204∆ also derepresses growth in RPMI, like gat201�
 This suggests that there might be one or more shared targets of both GAT201 and GAT204 that contribute to the phenotype.
 Here we create and write out genelists:
 
-- DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt
-- DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt
+- DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt
+- DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt
 
 ```{r intersect_DEGs_ChIP}
-DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP <-
+DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIP <-
   dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
-  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)) %T>%
-  write_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt")
+  intersect(dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene)) %T>%
+  write_lines(here::here("results",
+                         "DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt"))
 
-DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
+DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
   dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
   intersect(dplyr::pull(ChIPtargets_Gat204, CNAG)) %>%
-  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_up2x_FDR5, gene)) %T>%
-  write_lines("../results/DEGids_RPMI4h_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt")
+  intersect(dplyr::pull(DEGdf_RPMI_240_vsGAT201_up2x_FDR5, gene)) %T>%
+  write_lines(here::here("results",
+                         "DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt"))
 
-DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIP <-
+DEGids_RPMI_240_vsGAT201_down2x_FDR5_intersectGAT201ChIP <-
   dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
-  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene)) %T>%
-  write_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIP.txt")
+  intersect(dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene)) %T>%
+  write_lines(here::here("results",
+                         "DEGids_RPMI_240_vsGAT201_down2x_FDR5_intersectGAT201ChIP.txt"))
 
-DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
+DEGids_RPMI_240_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
   dplyr::pull(ChIPtargets_Gat201, CNAG) %>%
   intersect(dplyr::pull(ChIPtargets_Gat204, CNAG)) %>%
-  intersect(dplyr::pull(DEGdf_RPMI4h_vsGAT201_down2x_FDR5, gene)) %T>%
-  write_lines("../results/DEGids_RPMI4h_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt")
+  intersect(dplyr::pull(DEGdf_RPMI_240_vsGAT201_down2x_FDR5, gene)) %T>%
+  write_lines(here::here("results", "DEGids_RPMI_240_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP.txt"))
 ```
 
 
@@ -675,9 +700,9 @@ figure_DESEQ_GAT201 <-
   plot_grid(
     barplot_countDEGs_CT_vsGAT201 +
       theme(plot.margin = unit(c(0,0,0,0.1),"in")),
-    volcano_RPMI4h_vsGAT201,
+    volcano_RPMI_240_vsGAT201,
     heatmap_select_DEGAT201_anytime8x_240,
-    venn_RPMI4h_vsGAT201_Gat201ChIP  +
+    venn_RPMI_240_vsGAT201_Gat201ChIP  +
       theme(plot.margin = unit(c(0,0,0.1,0.2),"in")),
     # ggdraw() + 
     #   draw_label("GO analysis",
