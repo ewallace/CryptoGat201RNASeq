@@ -42,6 +42,7 @@ write_xlsx(
     gat201del_30_vsSerum = read_deseqdf("deseq_df_gat201del_30_vsSerum.txt"),
     gat201del_120_vsSerum = read_deseqdf("deseq_df_gat201del_120_vsSerum.txt"),
     gat201del_240_vsSerum = read_deseqdf("deseq_df_gat201del_240_vsSerum.txt"),
+    YPD_0_vsGAT201 = read_deseqdf("deseq_df_YPD_0_vsGAT201.txt"),
     RPMI_30_vsGAT201 = read_deseqdf("deseq_df_RPMI_30_vsGAT201.txt"),
     RPMI_120_vsGAT201 = read_deseqdf("deseq_df_RPMI_120_vsGAT201.txt"),
     RPMI_240_vsGAT201 = read_deseqdf("deseq_df_RPMI_240_vsGAT201.txt"),

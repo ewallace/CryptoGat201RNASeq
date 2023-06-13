@@ -184,6 +184,12 @@ unique(deseq_df_CT_vsGAT201$Condition_Time)
 
 ```{r write_deseq_dfs}
 dplyr::filter(deseq_df_CT_vsGAT201,
+              Condition_Time == "Y_0") %>%
+  mutate_if(is.numeric, signif, digits = 5) %>%
+  readr::write_tsv(file = here::here("results",
+                                     "deseq_df_YPD_0_vsGAT201.txt"))
+
+dplyr::filter(deseq_df_CT_vsGAT201,
               Condition_Time == "R_30") %>%
   mutate_if(is.numeric, signif, digits = 5) %>%
   readr::write_tsv(file = here::here("results",
@@ -261,6 +267,35 @@ barplot_countDEGs_CT_vsGAT201 <-
 
 barplot_countDEGs_CT_vsGAT201
 ```
+
+
+## Output the DEGs at YPD 0min
+
+Write output to tsv files, in order of log2 fold-change.
+
+```{r DEGs_YPD_0_vsGAT201}
+# Make data frames of DEGs up and down, arranged by log2FC
+DEGdf_YPD_0_vsGAT201_up2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "Y_0",
+                log2FC > 1, padj < 0.05) %>%
+  dplyr::arrange(desc(log2FC))
+
+DEGdf_YPD_0_vsGAT201_down2x_FDR5 <- 
+  dplyr::filter(deseq_df_CT_vsGAT201,
+                Condition_Time == "Y_0",
+                log2FC < -1, padj < 0.05) %>%
+  dplyr::arrange(log2FC)
+
+writeLines(text = DEGdf_YPD_0_vsGAT201_up2x_FDR5 %>%
+             pull(gene),
+           con = here::here("results", "DEGids_YPD_0_vsGAT201_up2x_FDR5.txt"))
+
+writeLines(text = DEGdf_YPD_0_vsGAT201_down2x_FDR5 %>%
+             pull(gene),
+           con = here::here("results", "DEGids_YPD_0_vsGAT201_down2x_FDR5.txt"))
+```
+
 
 ## Volcano plot at RPMI 4h only
 

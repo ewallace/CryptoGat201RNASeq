@@ -392,6 +392,7 @@ write_xlsx(
     gat201del_30_vsSerum = read_deseqdf(&quot;deseq_df_gat201del_30_vsSerum.txt&quot;),
     gat201del_120_vsSerum = read_deseqdf(&quot;deseq_df_gat201del_120_vsSerum.txt&quot;),
     gat201del_240_vsSerum = read_deseqdf(&quot;deseq_df_gat201del_240_vsSerum.txt&quot;),
+    YPD_0_vsGAT201 = read_deseqdf(&quot;deseq_df_YPD_0_vsGAT201.txt&quot;),
     RPMI_30_vsGAT201 = read_deseqdf(&quot;deseq_df_RPMI_30_vsGAT201.txt&quot;),
     RPMI_120_vsGAT201 = read_deseqdf(&quot;deseq_df_RPMI_120_vsGAT201.txt&quot;),
     RPMI_240_vsGAT201 = read_deseqdf(&quot;deseq_df_RPMI_240_vsGAT201.txt&quot;),
@@ -450,6 +451,14 @@ write_xlsx(
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;\t&quot;
 ## chr (2): gene, geneName
+## dbl (4): baseMean, log2FC, stderror, padj
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+## Rows: 6795 Columns: 7
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;\t&quot;
+## chr (3): Condition_Time, gene, geneName
 ## dbl (4): baseMean, log2FC, stderror, padj
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
