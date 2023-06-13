@@ -27,35 +27,40 @@ This makes figure panels:
 - heatmap of log2FC for all (or most) genes, showing overall variability, strong dependence on time, weak dependence on serum.
 - serum-dependent differential gene expression, counts per strain and timepoint
 
-These will then be combined into a multipanel figure, planned as figure 3 of the manuscript.
+These will then be combined into a multipanel figure, figure 3 of the manuscript.
 
 This also outputs serum-dependent differential expressed data frames and genelists:
 
+- DEGdf_WT_30_vsSerum.txt
 - DEGdf_WT_30_vsSerum_down2x_FDR5_ids.txt
 - DEGdf_WT_30_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_30_vsSerum_up2x_FDR5_ids.txt
 - DEGdf_WT_30_vsSerum_up2x_FDR5.txt
+- DEGdf_WT_120_vsSerum.txt
 - DEGdf_WT_120_vsSerum_down2x_FDR5_ids.txt
 - DEGdf_WT_120_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_120_vsSerum_up2x_FDR5_ids.txt
 - DEGdf_WT_120_vsSerum_up2x_FDR5.txt
+- DEGdf_WT_240_vsSerum.txt
 - DEGdf_WT_240_vsSerum_down2x_FDR5_ids.txt
 - DEGdf_WT_240_vsSerum_down2x_FDR5.txt
 - DEGdf_WT_240_vsSerum_up2x_FDR5_ids.txt
 - DEGdf_WT_240_vsSerum_up2x_FDR5.txt
-- DEGdf_delGAT201_240_vsSerum_up2x_FDR5.txt
-- DEGdf_delGAT201_30_vsSerum_down2x_FDR5_ids.txt
-- DEGdf_delGAT201_30_vsSerum_down2x_FDR5.txt
-- DEGdf_delGAT201_30_vsSerum_up2x_FDR5_ids.txt
-- DEGdf_delGAT201_30_vsSerum_up2x_FDR5.txt
-- DEGdf_delGAT201_120_vsSerum_down2x_FDR5_ids.txt
-- DEGdf_delGAT201_120_vsSerum_down2x_FDR5.txt
-- DEGdf_delGAT201_120_vsSerum_up2x_FDR5_ids.txt
-- DEGdf_delGAT201_120_vsSerum_up2x_FDR5.txt
-- DEGdf_delGAT201_240_vsSerum_down2x_FDR5_ids.txt
-- DEGdf_delGAT201_240_vsSerum_down2x_FDR5.txt
-- DEGdf_delGAT201_240_vsSerum_up2x_FDR5_ids.txt
-
+- DEGdf_gat201del_30_vsSerum.txt
+- DEGdf_gat201del_30_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_gat201del_30_vsSerum_down2x_FDR5.txt
+- DEGdf_gat201del_30_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_gat201del_30_vsSerum_up2x_FDR5.txt
+- DEGdf_gat201del_120_vsSerum.txt
+- DEGdf_gat201del_120_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_gat201del_120_vsSerum_down2x_FDR5.txt
+- DEGdf_gat201del_120_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_gat201del_120_vsSerum_up2x_FDR5.txt
+- DEGdf_gat201del_240_vsSerum.txt
+- DEGdf_gat201del_240_vsSerum_down2x_FDR5_ids.txt
+- DEGdf_gat201del_240_vsSerum_down2x_FDR5.txt
+- DEGdf_gat201del_240_vsSerum_up2x_FDR5_ids.txt
+- DEGdf_gat201del_240_vsSerum_up2x_FDR5.txt
 
 # Setup: load packages, load data, clean and prep data
 
@@ -115,6 +120,17 @@ write_DEGdflist <- function(DEGdf, datadir = "../results/", digits = 5,
 }
 ```
 
+## Load H99 Gene information
+
+```{r load_gene_info}
+gene_info_df <- 
+  here::here("input_annotation",
+             "H99_geneinfo_FungiDB59.txt") %>%
+  readr::read_tsv(comment = "#")  %>% 
+  dplyr::rename(gene = GeneID, geneName = GeneName) %>%
+  dplyr::mutate(geneName = dplyr::coalesce(geneName, gene))
+```
+
 
 
 ## Load count data and remove unwanted parts of column names
@@ -129,7 +145,7 @@ counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
 ```
 
 
-## Load sample sheet and format for DESeq2's requirements: readxl::read_excel
+## Load sample sheet and format for DESeq2's requirements
 
 Here we choose how the Strain labels behave by manipulating the factors. This creates a new variable `GAT201` whose levels are `del` and `WT`.
 
@@ -166,30 +182,31 @@ GCT_levels <- c("WT_Y_0",
                 "del_R_120", "del_RS_120", 
                 "del_R_240", "del_RS_240")
 
-samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
-    magrittr::set_rownames(.$SampleID) %>%
-    dplyr::mutate(GAT201 = 
-                    forcats::fct_collapse(Strain, 
-                                          "WT" = c("a","A"), 
-                                          "del" = c("B","M")) %>% 
-                    forcats::fct_relevel("del"),
-                  Timepoint = factor(Timepoint),
-                  Serum = forcats::fct_collapse(Condition, 
-                                          "Yes" = c("RS"), 
-                                          "No" = c("R")),
-                  Condition_Time = factor(
-                    paste(Condition, Time, sep = "_"),
-                    levels = Condition_Time_levels
-                  ),
-                  GAT201_Time =  factor(
-                    paste(GAT201, Time, sep = "_"),
-                    levels = GAT201_Time_levels
-                  ),
-                  GCT = factor(
-                    paste(GAT201, Condition, Time, sep = "_"),
-                    levels = GCT_levels
-                  )
-    )
+samplesheet <- 
+  readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+  magrittr::set_rownames(.$SampleID) %>%
+  dplyr::mutate(GAT201 = 
+                  forcats::fct_collapse(Strain, 
+                                        "WT" = c("a","A"), 
+                                        "del" = c("B","M")) %>% 
+                  forcats::fct_relevel("del"),
+                Timepoint = factor(Timepoint),
+                Serum = forcats::fct_collapse(Condition, 
+                                              "Yes" = c("RS"), 
+                                              "No" = c("R")),
+                Condition_Time = factor(
+                  paste(Condition, Time, sep = "_"),
+                  levels = Condition_Time_levels
+                ),
+                GAT201_Time =  factor(
+                  paste(GAT201, Time, sep = "_"),
+                  levels = GAT201_Time_levels
+                ),
+                GCT = factor(
+                  paste(GAT201, Condition, Time, sep = "_"),
+                  levels = GCT_levels
+                )
+  )
 
 ```
 
@@ -257,7 +274,7 @@ ggplot(data = count_stats_bygene) +
 ## Select GCT-dependent log2FC at each timepoint
 
 ```{r tidy_deseq_GCT}
-# Create a tidy data frame that contains only the GAT201-dependent log2FC
+# Create a tidy data frame that contains only the GCT-dependent log2FC
 # in a helpful format for plotting
 deseq_df_GCT <- 
   biobroom::tidy.DESeqDataSet(dds_all) %>%
@@ -315,14 +332,14 @@ ggplot(data = deseq_df_GCT_mincount_10,
 Here we restrict to genes with at least 10 counts in each sample.
 This list was calculated earlier as `genelist_mincount_10`. 
 
-This avoids a problem with numeric errors in calculations for all enes, that probably came from genes with low/zero counts.
+This avoids a problem with numeric errors in calculations for all genes, that probably came from genes with low/zero counts.
 
 ```{r hclust_genes}
 log2FC_GCT_m10_wide <-
   deseq_df_GCT_mincount_10  %>%
   select(gene,GCT, log2FC) %>%
   pivot_wider(id_cols = gene, names_from = GCT, values_from = log2FC) %>%
-  select(c("gene", GCT_levels))
+  select(c("gene", all_of(GCT_levels)))
 
 # order genes according to mean value at 0min, as far as clustering allows
 preferred_gene_ordering <- 
@@ -344,6 +361,7 @@ hclust_log2FC <-
   hclust(method = "average") %>%
   reorder(wts = preferred_gene_ordering)
 ```
+
 ## Plot clustering dendrogram by itself
 
 ```{r plot_dendrogram_log2FC_m10}
@@ -388,7 +406,7 @@ plot_log2FC_m10_dorder
 
 ## Make a nicer x-axis for sample labels
 
-This section programs up x-axis labels split up by GAT201, Time, Serum
+This section programs up x-axis labels split up by GAT201, Time, Serum.
 
 It's ugly code to get a pretty result.
 
@@ -525,8 +543,8 @@ plot_grid(plot_dendrogram_log2FC_m10,
           rel_widths = c(1,5,0.6),
           rel_heights = c(7,1))
 
-ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime_plus.svg",
-       width = 5.5, height = 5)
+# ggsave(filename = "../results/clustered_heatmap_GAT201SerumTime_plus.svg",
+#        width = 5.5, height = 5)
 ```
 
 
@@ -646,29 +664,8 @@ hclust_colour_df_grouped <-
   summarise(n = n(), ymin = min(y), ymax = max(y), ymean = mean(y))
 ```
 
-```{r plot_clusters}
-# FIX ME
-plot_cluster_select <- 
-  ggplot(data = hclust_colour_df_grouped %>%
-           dplyr::filter(!is.na(cluster_select))) +
-  geom_rect(aes(ymin = ymin, ymax = ymax
-                , fill = cluster_select
-                ),
-            # fill = "grey50",
-            xmin = -0.1, xmax = 0) +
-  geom_text(aes(y = ymean,
-                colour = cluster_select,
-                label = cluster_select),
-            x = 0.1, hjust = 0) +
-  coord_cartesian(xlim = c(-0.1,1), 
-                  ylim = c(min(hclust_colour_df_grouped$ymin),
-                           max(hclust_colour_df_grouped$ymax)),
-                  expand = c(0,0), clip = "off") +
-  scale_colour_brewer(type = "qual") + scale_fill_brewer(type = "qual") +
-  theme_nothing()
-  
-plot_cluster_select
-```
+
+Note that we do not use these clusters later, except to check where the select genes are in the heatmap.
 
 
 ## Plot example genes for main figure
@@ -729,11 +726,6 @@ plot_mygenes_facet <- function(mygenes,
   }
   return(plot_out)
 }
-
-# plot_mygenes_facet(
-#   mygenes =  c("CNAG_03012", "CNAG_06443", "CNAG_01551", "CNAG_06917", "CNAG_06125"),
-#   mygenenames = c("CQS1", "SSA1", "GAT201", "TSA3", "TEF1")
-# )
 
 plot_mygenes_facet(
   mygenes =  c("CNAG_06917", "CNAG_03012", "CNAG_01551", "CNAG_06443", "CNAG_00979", "CNAG_06125"),
@@ -811,11 +803,19 @@ coefnames_serum <- c("GAT201_TimeWT_30.SerumYes", "GAT201_TimeWT_120.SerumYes",
 deseq_df_GT_vsserum <- 
   biobroom::tidy.DESeqDataSet(dds_serum) %>%
   dplyr::filter(term %in% coefnames_serum) %>%
-  mutate(GAT201_Time = term %>%
+  dplyr::mutate(GAT201_Time = term %>%
            stringr::str_remove("GAT201_Time") %>%
            stringr::str_remove(".SerumYes") %>%
            factor(levels = GAT201_Time_levels)) %>%
-  select(GAT201_Time, gene, baseMean, log2FC = estimate, stderror, padj = p.adjusted)
+  dplyr::left_join(gene_info_df,
+                   by = "gene") %>% 
+  dplyr::select(GAT201_Time, 
+                gene, 
+                geneName,
+                baseMean,
+                log2FC = estimate,
+                stderror,
+                padj = p.adjusted)
 
 # check we retained all the levels
 unique(deseq_df_GT_vsserum$GAT201_Time)
@@ -867,6 +867,13 @@ Both as DEG dfs including log2 fold-change and p-values, also as lists of gene I
 First for wild-type cells
 
 ```{r DEGs_vsSerum_WT}
+DEGdf_WT_30_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_30") %>%
+  dplyr::select(-GAT201_Time)
+
+write_DEGdflist(DEGdf_WT_30_vsSerum, write_list = FALSE)
+
 DEGdf_WT_30_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "WT_30",
@@ -886,6 +893,13 @@ DEGdf_WT_30_vsSerum_down2x_FDR5 <-
 write_DEGdflist(DEGdf_WT_30_vsSerum_down2x_FDR5)
 
 
+DEGdf_WT_120_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_120") %>%
+  dplyr::select(-GAT201_Time)
+
+write_DEGdflist(DEGdf_WT_120_vsSerum, write_list = FALSE)
+
 DEGdf_WT_120_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "WT_120",
@@ -904,6 +918,13 @@ DEGdf_WT_120_vsSerum_down2x_FDR5 <-
 
 write_DEGdflist(DEGdf_WT_120_vsSerum_down2x_FDR5)
 
+
+DEGdf_WT_240_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "WT_240") %>%
+  dplyr::select(-GAT201_Time)
+
+write_DEGdflist(DEGdf_WT_240_vsSerum, write_list = FALSE)
 
 DEGdf_WT_240_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
@@ -927,70 +948,89 @@ write_DEGdflist(DEGdf_WT_240_vsSerum_down2x_FDR5)
 
 Then for deltaGAT201 cells
 
-```{r DEGs_vsSerum_delGAT201}
+```{r DEGs_vsSerum_gat201del}
+DEGdf_gat201del_30_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_30") %>%
+  dplyr::select(-GAT201_Time)
 
-DEGdf_delGAT201_30_vsSerum_up2x_FDR5 <- 
+write_DEGdflist(DEGdf_gat201del_30_vsSerum, write_list = FALSE)
+
+DEGdf_gat201del_30_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_30",
                 log2FC > 1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(desc(log2FC))
 
-write_DEGdflist(DEGdf_delGAT201_30_vsSerum_up2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_30_vsSerum_up2x_FDR5)
 
-DEGdf_delGAT201_30_vsSerum_down2x_FDR5 <- 
+DEGdf_gat201del_30_vsSerum_down2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_30",
                 log2FC < -1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(log2FC)
 
-write_DEGdflist(DEGdf_delGAT201_30_vsSerum_down2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_30_vsSerum_down2x_FDR5)
 
+DEGdf_gat201del_120_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_120") %>%
+  dplyr::select(-GAT201_Time)
 
-DEGdf_delGAT201_120_vsSerum_up2x_FDR5 <- 
+write_DEGdflist(DEGdf_gat201del_120_vsSerum, write_list = FALSE)
+
+DEGdf_gat201del_120_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_120",
                 log2FC > 1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(desc(log2FC))
 
-write_DEGdflist(DEGdf_delGAT201_120_vsSerum_up2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_120_vsSerum_up2x_FDR5)
 
-DEGdf_delGAT201_120_vsSerum_down2x_FDR5 <- 
+DEGdf_gat201del_120_vsSerum_down2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_120",
                 log2FC < -1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(log2FC)
 
-write_DEGdflist(DEGdf_delGAT201_120_vsSerum_down2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_120_vsSerum_down2x_FDR5)
 
+DEGdf_gat201del_240_vsSerum <- 
+  dplyr::filter(deseq_df_GT_vsserum,
+                GAT201_Time == "del_240") %>%
+  dplyr::select(-GAT201_Time)
 
-DEGdf_delGAT201_240_vsSerum_up2x_FDR5 <- 
+write_DEGdflist(DEGdf_gat201del_240_vsSerum, write_list = FALSE)
+
+DEGdf_gat201del_240_vsSerum_up2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_240",
                 log2FC > 1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(desc(log2FC))
 
-write_DEGdflist(DEGdf_delGAT201_240_vsSerum_up2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_240_vsSerum_up2x_FDR5)
 
-DEGdf_delGAT201_240_vsSerum_down2x_FDR5 <- 
+DEGdf_gat201del_240_vsSerum_down2x_FDR5 <- 
   dplyr::filter(deseq_df_GT_vsserum,
                 GAT201_Time == "del_240",
                 log2FC < -1, padj < 0.05) %>%
   dplyr::select(-GAT201_Time) %>%
   dplyr::arrange(log2FC)
 
-write_DEGdflist(DEGdf_delGAT201_240_vsSerum_down2x_FDR5)
+write_DEGdflist(DEGdf_gat201del_240_vsSerum_down2x_FDR5)
 
 ```
 
+
 ## Notes on genes at 4h
 
-```{r print_DEGdf_delGAT201_240_vsSerum_down2x_FDR5}
-DEGdf_delGAT201_240_vsSerum_down2x_FDR5
+```{r print_DEGdf_gat201del_240_vsSerum_down2x_FDR5}
+DEGdf_gat201del_240_vsSerum_down2x_FDR5
 ```
 
 - CNAG_00979, CTR4 Copper uptake transporter
@@ -1031,16 +1071,16 @@ volcano_WT_240_vsSerum
 
 ## Volcano plot, serum-dependent DGE in gat201∆ at 4 hours.
 
-```{r volcano_delGAT201_240_vsSerum}
+```{r volcano_gat201del_240_vsSerum}
 
-volcano_delGAT201_240_vsSerum <- 
+volcano_gat201del_240_vsSerum <- 
   ggplot(data = dplyr::filter(deseq_df_GT_vsserum,
                               GAT201_Time == "del_240"),
          aes(x = log2FC, y = -log10(padj)) ) +
   geom_point(size = 0.5, colour = "grey50") +
-  geom_point(data = DEGdf_delGAT201_240_vsSerum_up2x_FDR5,
+  geom_point(data = DEGdf_gat201del_240_vsSerum_up2x_FDR5,
              size = 1, colour = "darkblue") +
-  geom_point(data = DEGdf_delGAT201_240_vsSerum_down2x_FDR5,
+  geom_point(data = DEGdf_gat201del_240_vsSerum_down2x_FDR5,
              size = 1, colour = "darkred") +
   scale_y_continuous("-log10(p)",
                      limits = c(0,20), expand = c(0,0),
@@ -1052,7 +1092,7 @@ volcano_delGAT201_240_vsSerum <-
   coord_cartesian(clip = "off") +
   labs(title = "gat201∆")
 
-volcano_delGAT201_240_vsSerum
+volcano_gat201del_240_vsSerum
 ```
 
 ## Multipanel plot showing Serum affects expression of a small set of transcripts.
@@ -1065,7 +1105,7 @@ theme_gridplot <-
 multipanel_serumdependence <- 
   plot_grid(barplot_countDEGs_GT_vsserum + theme_gridplot,
             volcano_WT_240_vsSerum  + theme_gridplot,
-            volcano_delGAT201_240_vsSerum  + theme_gridplot,
+            volcano_gat201del_240_vsSerum  + theme_gridplot,
             ncol = 1, labels = "AUTO"
   )
 
@@ -1077,6 +1117,8 @@ ggsave("../results/serum_dependence_count_volcano2x.png",
 ```
 
 
-# TO DO
+# Session info for reproducibility
 
-- Write figure legend/captions.
+```{r session_info}
+sessionInfo()
+```
