@@ -1,17 +1,21 @@
-# CryptoGat201RNASeq_draft
-Cryptococcus neoformans RNA-seq Gat201 strains 2021.
+# CryptoGat201RNASeq
+
+Cryptococcus neoformans RNA-seq Gat201 experiment in RPMI and RPMI + Serum media.
 
 Data created by Liz Hughes, December 2020. 
-Analysis started by Edward Wallace, February 2021
+Analysis by Liz Hughes and Edward Wallace, February 2021 through June 2023
 
 # Contents
 
-* src - scripts for data processing
+* src - scripts for nearly-raw data processing, including main script quantseqfwd.nf
+* quantseqfwd_EH_050221 - results of quantseqfwd.nf
+* quantseqfwd_test_output - practice run on subsampled data. Only useful for troubleshooting
+* data_external - external data from published papers used for analysis
+* Rmarkdown - scripts for more results-oriented data analysis and figures
 * input_annotation - Cryptococcus genome annotation used for read alignment and counting.
 * input_experiment - other input files including sample sheet
 * results - output data and results
-* results_counts - Results consisting of count data and analyses of those.
-* results_deseq - Results of DESeq2 analysis on count data.
+
 
 ## How we made the subsampled data
 
