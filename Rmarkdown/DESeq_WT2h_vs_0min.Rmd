@@ -6,12 +6,6 @@ output:
   html_document:
     toc: yes
     toc_depth: 2
-  word_document:
-    toc: yes
-    toc_depth: '2'
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
 ---
 
 
@@ -58,9 +52,10 @@ theme_set(
 ```{r load_count_data}
 # note: we should insist that counts are loaded as integers
 # and check the other data types
-counts <- readr::read_tsv("../quantseqfwd_EH_050221/counts.txt",
-                   comment = "#") %>% 
-          dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
+counts <- 
+  here::here("quantseqfwd_EH_050221", "counts.txt") %>%
+  readr::read_tsv(comment = "#") %>% 
+  dplyr::rename_with(str_remove_all, pattern = "_S[0-9]+_R1_001_aln.bam")
 
 ```
 
@@ -75,7 +70,9 @@ Condition_Time_levels <- c("Y_0",
                            "R_30", "R_120", "R_240",
                            "RS_30", "RS_120", "RS_240") 
 
-samplesheet <- readxl::read_excel("../input_experiment/Gat201_samplesheet.xlsx") %>%
+samplesheet <- 
+    here::here("input_experiment", "Gat201_samplesheet.xlsx") %>%
+    readxl::read_excel() %>%
     magrittr::set_rownames(.$SampleID) %>%
     dplyr::mutate(GAT201 = 
                     forcats::fct_collapse(Strain, 
@@ -218,24 +215,20 @@ deseq_df_WTRS2h_vs_0min %>%
   ) %>%
   dplyr::mutate(padj = signif(padj, digits = 4)) %>%
   write_tsv(file = here::here("results",
-                              "deseq_df_WTRS2h_vs_0min.txt"))
+                              "deseq_df_WT_RPMISerum120min_vs_0min.txt"))
 
-# DEGdf_RPMI_up2x_FDR5 %>%
-#   dplyr::pull(gene) %>%
-#   write_lines(file = here::here("results", "DEGs",
-#                             "deglist_WTRS2h_vs_0min_up2x_FDR5.txt"))
-# 
-# DEGdf_RPMI_down2x_FDR5 %>%
-#   dplyr::pull(gene) %>%
-#   write_lines(file = here::here("results", "DEGs",
-#                             "deglist_WTRS2h_vs_0min_down2x_FDR5.txt"))
 ```
 
 ## Compare differential expression in Gat201 dataset with Wakeup dataset
 
+Note this downloads deseqdf_wakeup_file from github.
+You may need to change the filename if you have a local copy.
+
 ```{r load_wakeup}
+deseqdf_wakeup_file <- "https://raw.githubusercontent.com/ewallace/CryptoWakeupRNASeq/main/results/DEGs/deseq_df_RPMI37C2hr_vs_0min.txt"
+
 deseqdf_wakeup <- 
-  read_tsv("../../CryptoWakeupRNASeq/results/DEGs/deseq_df_RPMI37C2hr_vs_0min.txt",
+  read_tsv(deseqdf_wakeup_file,
            comment = "#")
 
 deseq_joined <- 
@@ -301,9 +294,12 @@ ggplot(data = deseq_joined %>%
 plot_scatter_filtered
 ```
 
+Plot with select genes highlighted. This is figure S11 of manuscript.
+
 ```{r plot_scatter_filtered_selectgenes, fig.height = 6.4, fig.width = 6}
 my30genes <- 
-  read_tsv("../input_annotation/CryptoWakeup_30genes.txt") %>%
+  here::here("input_annotation", "CryptoWakeup_30genes.txt") %>%
+  read_tsv() %>%
   dplyr::rename(gene = GeneID)
 
 deseq_joined_my30genes <- 
@@ -317,5 +313,14 @@ plot_scatter_filtered +
   geom_point(data = deseq_joined_my30genes, size = 1, colour = "darkblue") +
   geom_text_repel(data = deseq_joined_my30genes, 
                   aes(label = GeneName), colour = "darkblue")
+
+ggsave(here::here("results", "compare_2datasets_DESeq_WT2h_vs_0min.png"),
+       height = 6.4, width = 6)
 ```
 
+
+# Session info for reproducibility
+
+```{r session_info}
+sessionInfo()
+```
