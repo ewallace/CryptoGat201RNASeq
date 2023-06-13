@@ -18,14 +18,11 @@ This file analyses the counts per gene across samples.
 
 * reads in the sample sheet `input_experiment/QSData_samplesheet.csv`
 * reads in raw count data for all samples from file `quantseqfwd_EH_050221/counts.txt`, output by `featureCounts` running in the nextflow pipeline, which has gene (Geneid) as rows and counts as columns
-* normalizes the counts to transcripts per million for each sample using function `calculate_cpm`
-* makes a "tidy" or long-format dataset with counts and TPM spread out by Geneid and Sampleid and sample information
+* normalizes to counts per million for each sample using function `calculate_cpm`
+* makes a "tidy" or long-format dataset with counts and CPM spread out by Geneid and Sampleid and sample information
 * uses tidy data to plot expression against time for individual genes
 
-## To do
-
-* Clustering
-* Principal Component Analysis
+This analysis has largely been superseded by rlog (regularized logarithm) normalisation.
 
 
 ### Define functions
@@ -45,14 +42,18 @@ calculate_cpm <- function(x, round_digits = NA) {
 ## Load counts and sample sheet
 
 ```{r load_counts}
-sample_sheet <- read_csv("../input_experiment/QSData_samplesheet.csv") %>%
-    select(Sampleid = Sample.No., BioRep, Code, Strain, Condition, Time) %>%
-    mutate(Gat201 = factor(Strain %in% c("A","a"), 
-                           levels = c("TRUE","FALSE"),
-                           labels = c("WT", "delta"))
-           )
+sample_sheet <- 
+  here::here("input_experiment","QSData_samplesheet.csv") %>%
+  read_csv() %>%
+  select(Sampleid = Sample.No., BioRep, Code, Strain, Condition, Time) %>%
+  mutate(Gat201 = factor(Strain %in% c("A","a"), 
+                         levels = c("TRUE","FALSE"),
+                         labels = c("WT", "delta"))
+  )
 
-counts_bygene_wide <- read_tsv("../quantseqfwd_EH_050221/counts.txt", comment = "#")
+counts_bygene_wide <- 
+  here::here("quantseqfwd_EH_050221","counts.txt") %>%
+  read_tsv(comment = "#")
 counts_bygene_wide
 ```
 
@@ -76,7 +77,10 @@ counts_bygene_long
 ### Write out to file `quantseqfwd_EH_050221_tidy.txt`
 
 ```{r write_tidy_counts, dependson = "make_tidy_counts"}
-file_counts_long <- "../results_counts/quantseqfwd_EH_050221_tidy.txt.gz"
+file_counts_long <- here::here("results",
+                               "counts_quantseqfwd_EH_050221_tidy.txt.gz"
+                               )
+
 write_lines(c("# quantseqfwd_EH_050221_tidy.txt",
               "# Tidy/long-format counts from QuantSeq Gat201 RNA-seq timecourse in Cryptococcus neoformans",
               "# Edward Wallace, Edward.Wallace@ed.ac.uk",
