@@ -2,8 +2,16 @@
 
 Cryptococcus neoformans RNA-seq Gat201 experiment in RPMI and RPMI + Serum media.
 
+This repository is supplementary data accompanying the bioRxiv preprint:
+
+> A trade-off between proliferation and defense in the fungal pathogen Cryptococcus at alkaline pH is controlled by the transcription factor GAT201
+> Elizabeth S. Hughes, Zhenzhen He, Elizabeth R. Ballou, Edward W.J. Wallace.
+
+_doi and link to follow._
+
 Data created by Liz Hughes, December 2020. 
-Analysis by Liz Hughes and Edward Wallace, February 2021 through June 2023
+Analysis by Liz Hughes (liz.hughes@ed.ac.uk) and Edward Wallace (Edward.Wallace@ed.ac.uk), February 2021 through June 2023
+
 
 # Contents
 
