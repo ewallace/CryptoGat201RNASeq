@@ -1,7 +1,7 @@
 ---
 title: "PCA analysis of Gat201 RNA-seq dataset"
 author: "Liz Hughes and Edward Wallace"
-date: "16/12/2021"
+date: "2021-12-16"
 output:
   html_document:
     toc: yes
@@ -23,6 +23,11 @@ knitr::opts_chunk$set(echo = TRUE , warning=FALSE, message=FALSE)
 This document is a big-picture analysis of trends in the Gat201 RNA-seq dataset.
 
 The first goal is a principal component analysis (PCA) to show the main axes of variation in the data.
+
+This outputs a PCA plot and supplementary plot:
+
+- results/PC12_plot_GAT201RNAseq.svg (Figure 3B of manuscript)
+- results/PCmultipanel_plot_GAT201RNAseq.png (Figure S6)
 
 # Load packages used for analysis
 
