@@ -27,6 +27,19 @@ This makes figure panels:
 
 These are then combined into a multipanel figure, planned as figure 4 of the manuscript.
 
+It also write differentially expressed gene data frames and genelists:
+
+- deseq_df_YPD_0_vsGAT201.txt
+- deseq_df_RPMI_30_vsGAT201.txt
+- deseq_df_RPMI_120_vsGAT201.txt
+- deseq_df_RPMI_240_vsGAT201.txt
+- deseq_df_RPMISerum_30_vsGAT201.txt
+- deseq_df_RPMISerum_120_vsGAT201.txt
+- deseq_df_RPMISerum_240_vsGAT201.txt
+- DEGids_xxx_up/down2x_FDR5.txt (where xxx is in all the above conditions)
+- DEGids_RPMI_240_vsGAT201_up2x_FDR5_intersectGAT201ChIP.txt, and others intersecting DEG lists with GAT201 and GAT204 ChIP-seq results from Homer et al.
+
+
 # Setup: load packages, load data, clean and prep data
 
 
@@ -50,6 +63,9 @@ library(markdown)
 library(forcats)
 library(genefilter)
 library(ggrepel)
+library(RVenn)
+library(ggVennDiagram)
+library(sf)
 
 
 theme_set(
@@ -110,7 +126,7 @@ samplesheet <-
                                         "WT" = c("a","A"), 
                                         "del" = c("B","M")) %>% 
                   forcats::fct_relevel("del"),
-                Timepoint = factor(Timepoint),
+                Timepoint = factor(Time),
                 Condition_Time = factor(
                   paste(Condition, Time, sep = "_"),
                   levels = Condition_Time_levels
@@ -400,12 +416,13 @@ vennplotdata_pmserum <-
   ggVennDiagram::process_data()
 
 ggplot() +
-  geom_sf(aes(color = id), 
-          data = ggVennDiagram::venn_setedge(vennplotdata_pmserum), show.legend = FALSE) +
-  geom_sf_text(aes(label = name), 
+  geom_path(aes(x = X, y = Y, color = id, group = id), 
+            data = ggVennDiagram::venn_setedge(vennplotdata_pmserum), 
+            show.legend = FALSE) +
+  geom_text(aes(X, Y, label = name), 
                data = ggVennDiagram::venn_setlabel(vennplotdata_pmserum)) +
-  geom_sf_text(aes(label = count), 
-               data = ggVennDiagram::venn_region(vennplotdata_pmserum)) +
+  geom_text(aes(X, Y, label = count), 
+            data = ggVennDiagram::venn_regionlabel(vennplotdata_pmserum)) +
   theme_void() +
   scale_colour_manual(values = c("darkred", "magenta2", "cyan3", "darkblue")) +
   coord_sf(clip = "off")
@@ -454,7 +471,7 @@ plotheat_log2FC_geneName <- function( geneNames = c("GAT204", "CNAG_06917", "ACT
     scale_x_discrete("Serum, Time (mins.) in RPMI", 
                      breaks = Condition_Time_levels, 
                      labels = Condition_Time_levels_vprint) +
-    coord_cartesian(expand = c(0,0)) +
+    coord_cartesian(expand = FALSE) +
     theme(panel.grid.major = element_blank(),
           axis.line = element_blank(),
           axis.ticks.y = element_blank())
@@ -599,12 +616,12 @@ vennplotdata_Gat201 <-
 
 venn_RPMI_240_vsGAT201_Gat201ChIP <- 
   ggplot() +
-  geom_sf(aes(color = id), 
-          data = ggVennDiagram::venn_setedge(vennplotdata_Gat201), show.legend = FALSE) +
-  geom_sf_text(aes(label = name), 
-               data = ggVennDiagram::venn_setlabel(vennplotdata_Gat201)) +
-  geom_sf_text(aes(label = count), 
-               data = ggVennDiagram::venn_region(vennplotdata_Gat201)) +
+  geom_path(aes(x = X, y = Y, color = id), 
+          data = venn_setedge(vennplotdata_Gat201), show.legend = FALSE) +
+  geom_text(aes(x = X, y = Y, label = name), 
+               data = venn_setlabel(vennplotdata_Gat201)) +
+  geom_text(aes(x = X, y = Y, label = count), 
+               data = venn_regionlabel(vennplotdata_Gat201)) +
   theme_void() +
   scale_colour_manual(values = c("grey20", "darkred", "darkblue")) +
   coord_sf(clip = "off")
@@ -640,12 +657,12 @@ vennplotdata_Gat204 <-
 
 venn_RPMI_240_vsGAT201_Gat204ChIP <- 
   ggplot() +
-  geom_sf(aes(color = id), 
+  geom_path(aes(x = X, y = Y, color = id), 
           data = ggVennDiagram::venn_setedge(vennplotdata_Gat204), show.legend = FALSE) +
-  geom_sf_text(aes(label = name), 
+  geom_text(aes(x = X, y = Y, label = name), 
                data = ggVennDiagram::venn_setlabel(vennplotdata_Gat204)) +
-  geom_sf_text(aes(label = count), 
-               data = ggVennDiagram::venn_region(vennplotdata_Gat204)) +
+  geom_text(aes(x = X, y = Y, label = count), 
+               data = ggVennDiagram::venn_regionlabel(vennplotdata_Gat204)) +
   theme_void() +
   scale_colour_manual(values = c("grey20", "forestgreen", "darkred", "darkblue")) +
   coord_sf(clip = "off")
@@ -672,12 +689,12 @@ vennplotdata_Liv3 <-
 
 venn_RPMI_240_vsGAT201_Liv3ChIP <- 
   ggplot() +
-  geom_sf(aes(color = id), 
+  geom_path(aes(x = X, y = Y, color = id), 
           data = ggVennDiagram::venn_setedge(vennplotdata_Liv3), show.legend = FALSE) +
-  geom_sf_text(aes(label = name), 
+  geom_text(aes(x = X, y = Y, label = name), 
                data = ggVennDiagram::venn_setlabel(vennplotdata_Liv3)) +
-  geom_sf_text(aes(label = count), 
-               data = ggVennDiagram::venn_region(vennplotdata_Liv3)) +
+  geom_text(aes(x = X, y = Y, label = count), 
+               data = ggVennDiagram::venn_regionlabel(vennplotdata_Liv3)) +
   theme_void() +
   scale_colour_manual(values = c("grey20", "goldenrod", "darkred", "darkblue")) +
   coord_sf(clip = "off")
@@ -728,7 +745,7 @@ DEGids_RPMI_240_vsGAT201_down2x_FDR5_intersectGAT201ChIPGAT204ChIP <-
 ```
 
 
-# Draft Multipanel Figure
+# Multipanel Figure
 
 ```{r figure_DESEQ_GAT201, fig.width = 7.5, fig.height = 8.75}
 figure_DESEQ_GAT201 <- 
@@ -766,14 +783,6 @@ here::here("results","figure_DESEQ_GAT201.svg") %>%
   ggsave(plot = figure_DESEQ_GAT201, width = 7.5, height = 8.75)
 ```
 
-
-# To do
-
-- Discuss which heatmap version to use in draft multipanel figure
-- Fix x-axis labels on heatmap to be informative
-- Add informative header to output list of differentially expressed genes
-- Do we need a statistical test of enrichment?
-- Add GO analysis panel
 
 
 # Session info for reproducibility
